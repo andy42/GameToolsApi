@@ -8,8 +8,8 @@ import io.ktor.http.*
 import com.jaehl.plugins.*
 
 class ApplicationTest {
-    @Test
-    fun testRoot() = testApplication {
+//    @Test
+//    fun testRoot() = testApplication {
 //        application {
 //            configureRouting()
 //        }
@@ -17,5 +17,5 @@ class ApplicationTest {
 //            assertEquals(HttpStatusCode.OK, status)
 //            assertEquals("Hello World!", bodyAsText())
 //        }
-    }
+//    }
 }

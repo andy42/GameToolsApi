@@ -3,30 +3,51 @@ package com.jaehl
 import com.google.gson.reflect.TypeToken
 import com.jaehl.data.auth.PasswordHashingImp
 import com.jaehl.data.auth.TokenManagerImp
+import com.jaehl.data.database.Database
+import com.jaehl.repositories.GameRepo
+import com.jaehl.repositories.GameRepoImp
 import com.jaehl.data.local.ObjectListJsonLoader
+import com.jaehl.data.model.EnvironmentConfig
 import com.jaehl.models.User
-import io.ktor.server.application.*
-import com.jaehl.plugins.*
+import com.jaehl.models.response.ErrorResponse
+import com.jaehl.plugins.configureRouting
 import com.jaehl.repositories.UserRepoImp
+import com.jaehl.statuspages.gameStatusPages
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.response.*
 import kotlinx.serialization.json.Json
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 fun Application.module() {
 
-    val secret = environment.config.property("jwt.secret").getString()
-    val issuer = environment.config.property("jwt.issuer").getString()
-    val audience = environment.config.property("jwt.audience").getString()
-    val myRealm = environment.config.property("jwt.realm").getString()
+    val environmentConfig = EnvironmentConfig(
+        jwtSecret = environment.config.property("jwt.secret").getString(),
+        jwtIssuer = environment.config.property("jwt.issuer").getString(),
+        jwtAudience = environment.config.property("jwt.audience").getString(),
+        jwtRealm = environment.config.property("jwt.realm").getString(),
+
+        jdbcDriver = environment.config.property("database.driver").getString(),
+        jdbcDatabaseUrl = environment.config.property("database.databaseUrl").getString(),
+        databaseUsername = environment.config.property("database.userName").getString(),
+        databasePassword = environment.config.property("database.password").getString(),
+    )
+
+    val database = Database(environmentConfig)
+
+    val gameRepo: GameRepo = GameRepoImp(
+        database = database,
+        coroutineScope = this
+    )
 
     val tokenManager = TokenManagerImp(
-        secret = secret,
-        issuer = issuer,
-        audience = audience
+        environmentConfig = environmentConfig
     )
 
     val userRepo = UserRepoImp(
@@ -36,7 +57,7 @@ fun Application.module() {
 
     install(Authentication) {
         jwt("auth-jwt") {
-            realm = myRealm
+            realm = environmentConfig.jwtRealm
             verifier(
                 tokenManager.createJWTVerifier()
             )
@@ -50,6 +71,19 @@ fun Application.module() {
         }
     }
 
+    install(StatusPages) {
+        gameStatusPages()
+        exception<Throwable> { call, cause ->
+            call.respond(
+                status = HttpStatusCode.InternalServerError,
+                ErrorResponse(
+                    code = HttpStatusCode.InternalServerError.value,
+                    message = cause.message ?: ""
+                )
+            )
+        }
+    }
+
     install(ContentNegotiation) {
         json(Json {
             prettyPrint = true
@@ -57,6 +91,9 @@ fun Application.module() {
         })
     }
 
-    //configureSerialization()
-    configureRouting(tokenManager, userRepo)
+    configureRouting(
+        tokenManager,
+        userRepo,
+        gameRepo
+    )
 }

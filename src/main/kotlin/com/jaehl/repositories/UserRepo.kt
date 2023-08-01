@@ -13,7 +13,7 @@ import kotlin.io.path.exists
 
 interface UserRepo {
     fun checkIfUserExists(userCredentials : UserCredentials) : Boolean
-    fun createUser(userCredentials : UserCredentials)
+    fun createUser(userCredentials : UserCredentials) : String
     fun verifyAndGetUser(userCredentials: UserCredentials) : User?
     fun getUser(userId : String) : User?
     fun getUsers() : List<User>
@@ -64,7 +64,7 @@ class UserRepoImp(
         }
     }
 
-    override fun createUser(userCredentials : UserCredentials) {
+    override fun createUser(userCredentials : UserCredentials) : String {
         val userId = createNewId()
         users[userId] = User(
             id = userId,
@@ -74,6 +74,7 @@ class UserRepoImp(
         )
         getUserFile()
         userListLoader.save(getUserFile(), users.values.toList())
+        return userId
     }
 
     override fun verifyAndGetUser(userCredentials: UserCredentials) : User? {
