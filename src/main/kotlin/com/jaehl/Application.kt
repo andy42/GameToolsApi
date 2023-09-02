@@ -4,15 +4,16 @@ import com.google.gson.reflect.TypeToken
 import com.jaehl.data.auth.PasswordHashingImp
 import com.jaehl.data.auth.TokenManagerImp
 import com.jaehl.data.database.Database
-import com.jaehl.repositories.GameRepo
-import com.jaehl.repositories.GameRepoImp
 import com.jaehl.data.local.ObjectListJsonLoader
 import com.jaehl.data.model.EnvironmentConfig
+import com.jaehl.data.repositories.*
 import com.jaehl.models.User
 import com.jaehl.models.response.ErrorResponse
 import com.jaehl.plugins.configureRouting
-import com.jaehl.repositories.UserRepoImp
+import com.jaehl.data.repositories.*
 import com.jaehl.statuspages.gameStatusPages
+import com.jaehl.statuspages.imageStatusPage
+import com.jaehl.statuspages.itemStatusPages
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -37,6 +38,8 @@ fun Application.module() {
         jdbcDatabaseUrl = environment.config.property("database.databaseUrl").getString(),
         databaseUsername = environment.config.property("database.userName").getString(),
         databasePassword = environment.config.property("database.password").getString(),
+
+        userHomeDirectory = "gameToolsApi"
     )
 
     val database = Database(environmentConfig)
@@ -53,6 +56,17 @@ fun Application.module() {
     val userRepo = UserRepoImp(
         userListLoader = ObjectListJsonLoader<User>(object : TypeToken<Array<User>>() {}.type),
         passwordHashing = PasswordHashingImp()
+    )
+
+    val imageRepo = ImageRepoImp(
+        database = database,
+        coroutineScope = this,
+        environmentConfig = environmentConfig
+    )
+
+    val itemRepo = ItemRepoImp(
+        database = database,
+        coroutineScope = this
     )
 
     install(Authentication) {
@@ -73,6 +87,8 @@ fun Application.module() {
 
     install(StatusPages) {
         gameStatusPages()
+        imageStatusPage()
+        itemStatusPages()
         exception<Throwable> { call, cause ->
             call.respond(
                 status = HttpStatusCode.InternalServerError,
@@ -94,6 +110,9 @@ fun Application.module() {
     configureRouting(
         tokenManager,
         userRepo,
-        gameRepo
+        gameRepo,
+        imageRepo,
+        itemRepo
+
     )
 }

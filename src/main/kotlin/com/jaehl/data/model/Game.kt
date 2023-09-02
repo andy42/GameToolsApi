@@ -1,6 +1,6 @@
 package com.jaehl.data.model
 
-import com.jaehl.repositories.GameRow
+import com.jaehl.data.repositories.GameRow
 import kotlinx.serialization.Serializable
 
 @Serializable

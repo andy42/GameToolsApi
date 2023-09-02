@@ -1,6 +1,7 @@
 package com.jaehl.repositories
 
 import com.jaehl.data.model.Game
+import com.jaehl.data.repositories.GameRepo
 import com.jaehl.statuspages.GameIdNotfound
 
 class GameRepoMock : GameRepo {

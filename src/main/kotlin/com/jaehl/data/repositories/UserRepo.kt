@@ -1,4 +1,4 @@
-package com.jaehl.repositories
+package com.jaehl.data.repositories
 
 import com.jaehl.data.auth.PasswordHashing
 import com.jaehl.data.local.ObjectListLoader
@@ -13,7 +13,7 @@ import kotlin.io.path.exists
 
 interface UserRepo {
     fun checkIfUserExists(userCredentials : UserCredentials) : Boolean
-    fun createUser(userCredentials : UserCredentials) : String
+    fun createUser(userCredentials : UserCredentials) : User
     fun verifyAndGetUser(userCredentials: UserCredentials) : User?
     fun getUser(userId : String) : User?
     fun getUsers() : List<User>
@@ -64,17 +64,18 @@ class UserRepoImp(
         }
     }
 
-    override fun createUser(userCredentials : UserCredentials) : String {
+    override fun createUser(userCredentials : UserCredentials) : User {
         val userId = createNewId()
-        users[userId] = User(
+        val newUser = User(
             id = userId,
             userName = userCredentials.username,
             passwordHash = passwordHashing.hashPassword(userCredentials.password),
             role = User.Role.User
         )
+        users[userId] = newUser
         getUserFile()
         userListLoader.save(getUserFile(), users.values.toList())
-        return userId
+        return newUser
     }
 
     override fun verifyAndGetUser(userCredentials: UserCredentials) : User? {

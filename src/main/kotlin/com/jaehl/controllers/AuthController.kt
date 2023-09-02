@@ -1,9 +1,10 @@
 package com.jaehl.controllers
 
 import com.jaehl.data.auth.TokenManager
+import com.jaehl.data.model.UserToken
 import com.jaehl.models.User
 import com.jaehl.models.UserCredentials
-import com.jaehl.repositories.UserRepo
+import com.jaehl.data.repositories.UserRepo
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -23,9 +24,9 @@ class AuthController(
             call.respond(HttpStatusCode.Conflict)
             return
         }
-        userRepo.createUser(userCredentials)
+        val user = userRepo.createUser(userCredentials)
 
-        call.respond(hashMapOf("register" to true))
+        call.respond(hashMapOf("data" to UserToken( token = tokenManager.generateJWTToken(user))))
     }
 
     suspend fun userLogin(call: ApplicationCall) {
@@ -37,7 +38,7 @@ class AuthController(
             return
         }
 
-        call.respond(hashMapOf("token" to tokenManager.generateJWTToken(user)))
+        call.respond(hashMapOf("data" to UserToken( token = tokenManager.generateJWTToken(user))))
     }
 
     suspend fun userMe(call: ApplicationCall) {

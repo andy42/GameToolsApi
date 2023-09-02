@@ -9,5 +9,7 @@ data class EnvironmentConfig (
     val jdbcDriver : String,
     val jdbcDatabaseUrl : String,
     val databaseUsername : String,
-    val databasePassword : String
+    val databasePassword : String,
+
+    val userHomeDirectory : String
 )
