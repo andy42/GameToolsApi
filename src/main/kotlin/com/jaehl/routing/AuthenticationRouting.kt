@@ -2,7 +2,7 @@ package com.jaehl.routing
 
 import com.jaehl.controllers.AuthController
 import com.jaehl.data.auth.TokenManager
-import com.jaehl.repositories.UserRepo
+import com.jaehl.data.repositories.UserRepo
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.routing.*

@@ -1,4 +1,4 @@
-package com.jaehl.repositories
+package com.jaehl.data.repositories
 
 import com.jaehl.data.database.Database
 import com.jaehl.data.model.Game
@@ -33,10 +33,9 @@ class GameRepoImp(
     }
 
     override suspend fun addNew(name: String) = database.dbQuery {
-        val gameId = Games.insertAndGetId {
-            it[Games.name] = name
+        val gameRow = GameRow.new {
+            this.name = name
         }
-        val gameRow = GameRow.findById(gameId) ?: throw GameIdNotfound(gameId.value)
         return@dbQuery Game.create(gameRow)
     }
 

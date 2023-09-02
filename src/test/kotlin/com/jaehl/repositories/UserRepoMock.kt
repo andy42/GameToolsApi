@@ -1,5 +1,6 @@
 package com.jaehl.repositories
 
+import com.jaehl.data.repositories.UserRepo
 import com.jaehl.models.User
 import com.jaehl.models.UserCredentials
 import java.util.*
@@ -25,15 +26,16 @@ class UserRepoMock : UserRepo {
         return (userMap.values.firstOrNull { it.userName ==  userCredentials.username} != null)
     }
 
-    override fun createUser(userCredentials: UserCredentials) : String{
+    override fun createUser(userCredentials: UserCredentials) : User {
         val newId = UUID.randomUUID().toString()
-        userMap[newId] = User(
+        val user = User(
             id = newId,
             userName = userCredentials.username,
             passwordHash = userCredentials.password,
             role = User.Role.User
         )
-        return newId
+        userMap[newId] = user
+        return user
     }
 
     override fun verifyAndGetUser(userCredentials: UserCredentials): User? {

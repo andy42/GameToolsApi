@@ -2,10 +2,10 @@ package com.jaehl.routing
 
 import com.jaehl.controllers.GameController
 import com.jaehl.data.auth.TokenManager
-import com.jaehl.repositories.GameRepo
+import com.jaehl.data.repositories.GameRepo
 import com.jaehl.models.requests.NewGameRequest
 import com.jaehl.models.requests.UpdateGameRequest
-import com.jaehl.repositories.UserRepo
+import com.jaehl.data.repositories.UserRepo
 import com.jaehl.statuspages.GameIdBadRequest
 import io.ktor.http.*
 import io.ktor.server.application.*

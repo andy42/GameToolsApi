@@ -27,7 +27,7 @@ class TokenManagerImp(
             .withClaim(userNameKey, user.userName)
             .withClaim(userIdKey, user.id)
             .withClaim(userRoleKey, user.role.value)
-            .withExpiresAt(Date(System.currentTimeMillis() + 1000*60*24))
+            .withExpiresAt(Date(System.currentTimeMillis() + 1000*60*60*24))
             .sign(Algorithm.HMAC256(environmentConfig.jwtSecret))
     }
 

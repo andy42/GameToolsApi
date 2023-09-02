@@ -1,11 +1,11 @@
 package com.jaehl.controllers
 
-import com.jaehl.repositories.GameRepo
+import com.jaehl.data.repositories.GameRepo
 import com.jaehl.models.User
 import com.jaehl.models.requests.NewGameRequest
 import com.jaehl.models.requests.UpdateGameRequest
 import com.jaehl.data.model.Game
-import com.jaehl.repositories.UserRepo
+import com.jaehl.data.repositories.UserRepo
 import com.jaehl.statuspages.AuthorizationException
 import com.jaehl.statuspages.GameIdNotfound
 import com.jaehl.statuspages.GameNotAddedException
