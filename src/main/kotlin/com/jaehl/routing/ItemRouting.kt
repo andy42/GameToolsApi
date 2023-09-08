@@ -7,6 +7,7 @@ import com.jaehl.models.requests.NewItemRequest
 import com.jaehl.data.repositories.GameRepo
 import com.jaehl.data.repositories.ItemRepo
 import com.jaehl.data.repositories.UserRepo
+import com.jaehl.models.requests.UpdateItemRequest
 import com.jaehl.statuspages.ItemBadRequest
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -42,6 +43,15 @@ fun Application.itemRouting(itemRepo : ItemRepo, gameRepo: GameRepo, tokenManage
                 val response = itemController.addItem(userId, newItemRequest)
                 call.respond(hashMapOf("data" to response))
             }
+
+            post("/items/{id}") {
+                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val itemId = call.parameters["id"]?.toIntOrNull() ?: throw ItemBadRequest("can not convert id to Int")
+                val updateItemRequest = call.receive<UpdateItemRequest>()
+                val response = itemController.updateItem(userId, itemId, updateItemRequest)
+                call.respond(hashMapOf("data" to response))
+            }
+
             get("/items") {
                 val gameId = call.request.queryParameters["gameId"]?.let {
                     it.toIntOrNull() ?: throw ItemBadRequest("can not convert gameId to Int")

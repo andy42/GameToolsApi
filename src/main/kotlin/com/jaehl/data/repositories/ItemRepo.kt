@@ -3,10 +3,8 @@ package com.jaehl.data.repositories
 import com.jaehl.data.database.Database
 import com.jaehl.data.model.Item
 import com.jaehl.data.model.ItemCategory
-import com.jaehl.statuspages.CategoryIdNotfound
-import com.jaehl.statuspages.GameIdNotfound
-import com.jaehl.statuspages.ImageIdNotfound
-import com.jaehl.statuspages.ItemIdNotfound
+import com.jaehl.models.requests.UpdateItemRequest
+import com.jaehl.statuspages.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.exposed.dao.IntEntity
@@ -18,6 +16,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 interface ItemRepo {
     suspend fun addNewItem(gameId : Int, name : String, imageId : Int, categories : List<Int>) : Item
+    suspend fun updateItem(itemId : Int, request : UpdateItemRequest) : Item
     suspend fun getItem(itemId : Int) : Item
     suspend fun getItems() : List<Item>
     suspend fun deleteItem(itemId : Int)
@@ -71,6 +70,23 @@ class ItemRepoImp(
                 }
             )
         }
+        return@dbQuery convertItemRow(itemRow)
+    }
+
+    override suspend fun updateItem(itemId: Int, request: UpdateItemRequest): Item = database.dbQuery {
+        val image = ImageRow.findById(request.image) ?: throw ImageIdNotfound(request.image)
+        val game = GameRow.findById(request.game) ?: throw GameIdNotfound(request.game)
+        val itemRow = ItemRow.findById(itemId) ?: throw NotFound("item not found $itemId")
+
+        itemRow.name = request.name
+        itemRow.image = image.id
+        itemRow.game = game.id
+        itemRow.categories = SizedCollection(
+            request.categories.map {categoryId ->
+                CategoryRow.findById(categoryId) ?: throw CategoryIdNotfound(categoryId)
+            }
+        )
+
         return@dbQuery convertItemRow(itemRow)
     }
 

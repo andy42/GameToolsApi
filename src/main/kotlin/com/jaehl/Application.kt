@@ -12,6 +12,7 @@ import com.jaehl.models.response.ErrorResponse
 import com.jaehl.plugins.configureRouting
 import com.jaehl.data.repositories.*
 import com.jaehl.statuspages.gameStatusPages
+import com.jaehl.statuspages.generalStatusPages
 import com.jaehl.statuspages.imageStatusPage
 import com.jaehl.statuspages.itemStatusPages
 import io.ktor.http.*
@@ -69,6 +70,11 @@ fun Application.module() {
         coroutineScope = this
     )
 
+    val recipeRepo = RecipeRepoImp(
+        database = database,
+        coroutineScope = this
+    )
+
     install(Authentication) {
         jwt("auth-jwt") {
             realm = environmentConfig.jwtRealm
@@ -86,6 +92,7 @@ fun Application.module() {
     }
 
     install(StatusPages) {
+        generalStatusPages()
         gameStatusPages()
         imageStatusPage()
         itemStatusPages()
@@ -112,7 +119,7 @@ fun Application.module() {
         userRepo,
         gameRepo,
         imageRepo,
-        itemRepo
-
+        itemRepo,
+        recipeRepo
     )
 }

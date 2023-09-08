@@ -31,12 +31,12 @@ class GameControllerTest {
     @Test
     fun `addNewGame with admin account creates game`() = runTest {
         val controller = createGameController()
-        val userId = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
-        userRepo.setUserRole(userId, User.Role.Admin)
+        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        userRepo.setUserRole(user.id, User.Role.Admin)
 
         val gameName = "test1"
         val response = controller.addNewGame(
-            userId = userId,
+            userId = user.id,
             newGameRequest = NewGameRequest(
                 name = gameName
             )
@@ -47,13 +47,13 @@ class GameControllerTest {
     @Test
     fun `addNewGame with user account creates error`() = runTest {
         val controller = createGameController()
-        val userId = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
-        userRepo.setUserRole(userId, User.Role.User)
+        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        userRepo.setUserRole(user.id, User.Role.User)
 
         val gameName = "test1"
         assertThrows<AuthorizationException> {
             controller.addNewGame(
-                userId = userId,
+                userId = user.id,
                 newGameRequest = NewGameRequest(
                     name = gameName
                 )
@@ -64,14 +64,14 @@ class GameControllerTest {
     @Test
     fun `updateGame with admin account updates game`() = runTest {
         val controller = createGameController()
-        val adminUserId = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
-        userRepo.setUserRole(adminUserId, User.Role.Admin)
+        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        userRepo.setUserRole(user.id, User.Role.Admin)
 
         val game = gameRepo.addNew("testGame")
 
         val newName = "updatedName"
         val response = controller.updateGame(
-            userId = adminUserId,
+            userId = user.id,
             gameId = game?.id ?: -1,
             updateGameRequest = UpdateGameRequest(
                 name = newName
@@ -83,14 +83,14 @@ class GameControllerTest {
     @Test
     fun `updateGame with user account throws error`() = runTest {
         val controller = createGameController()
-        val adminUserId = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
-        userRepo.setUserRole(adminUserId, User.Role.User)
+        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        userRepo.setUserRole(user.id, User.Role.User)
 
         val game = gameRepo.addNew("testGame")
 
         assertThrows<AuthorizationException> {
             controller.updateGame(
-                userId = adminUserId,
+                userId = user.id,
                 gameId = game?.id ?: -1,
                 updateGameRequest = UpdateGameRequest(
                     name = "updatedName"
@@ -102,14 +102,14 @@ class GameControllerTest {
     @Test
     fun `deleteGame with admin account deletes game`() = runTest {
         val controller = createGameController()
-        val adminUserId = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
-        userRepo.setUserRole(adminUserId, User.Role.Admin)
+        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        userRepo.setUserRole(user.id, User.Role.Admin)
 
         val game = gameRepo.addNew("testGame")
 
         assertEquals(1, gameRepo.getGames().size)
         controller.deleteGame(
-            userId = adminUserId,
+            userId = user.id,
             gameId = game?.id ?: -1
         )
         assertEquals(0, gameRepo.getGames().size)
@@ -118,14 +118,14 @@ class GameControllerTest {
     @Test
     fun `deleteGame with user account throws error`() = runTest {
         val controller = createGameController()
-        val adminUserId = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
-        userRepo.setUserRole(adminUserId, User.Role.User)
+        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        userRepo.setUserRole(user.id, User.Role.User)
 
         val game = gameRepo.addNew("testGame")
 
         assertThrows<AuthorizationException> {
             controller.deleteGame(
-                userId = adminUserId,
+                userId = user.id,
                 gameId = game?.id ?: -1
             )
         }
