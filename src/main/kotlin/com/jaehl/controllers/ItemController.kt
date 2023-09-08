@@ -8,6 +8,7 @@ import com.jaehl.models.requests.NewItemRequest
 import com.jaehl.data.repositories.GameRepo
 import com.jaehl.data.repositories.ItemRepo
 import com.jaehl.data.repositories.UserRepo
+import com.jaehl.models.requests.UpdateItemRequest
 import com.jaehl.statuspages.AuthorizationException
 
 class ItemController (
@@ -31,6 +32,14 @@ class ItemController (
             categories = newItemRequest.categories,
             imageId = newItemRequest.image,
             gameId = newItemRequest.game
+        )
+    }
+
+    suspend fun updateItem(userId: String, itemId: Int, updateItemRequest: UpdateItemRequest) : Item{
+        if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
+        return itemRepo.updateItem(
+            itemId = itemId,
+            request = updateItemRequest
         )
     }
 
