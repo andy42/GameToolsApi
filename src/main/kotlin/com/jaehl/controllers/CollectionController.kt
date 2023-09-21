@@ -53,12 +53,6 @@ class CollectionController(
         collectionRepo.deleteGroup(groupId)
     }
 
-//    suspend fun addItemAmount(userId : Int, collectionId : Int, groupId : Int, itemId : Int, request : NewCollectionItemAmountRequest) : Collection.Group {
-//        val collection = collectionRepo.getCollection(collectionId)
-//        if(userId != collection.userId) throw AuthorizationException()
-//        return collectionRepo.addItemAmount(groupId, itemId, request)
-//    }
-
     suspend fun updateItemAmount(userId : Int, collectionId : Int, groupId : Int, itemId : Int, request : UpdateCollectionItemAmountRequest) : Collection.Group {
         val collection = collectionRepo.getCollection(collectionId)
         if(userId != collection.userId) throw AuthorizationException()

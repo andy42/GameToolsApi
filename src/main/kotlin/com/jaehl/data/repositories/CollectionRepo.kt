@@ -23,7 +23,6 @@ interface CollectionRepo {
     suspend fun updateGroup(groupId : Int, request : UpdateCollectionGroupRequest) : Collection.Group
     suspend fun deleteGroup(groupId: Int)
     suspend fun getGroup(groupId : Int) : Collection.Group
-    //suspend fun addItemAmount(groupId : Int, itemId : Int, request : NewCollectionItemAmountRequest) : Collection.Group
     suspend fun updateItemAmount(groupId : Int, itemId : Int, request : UpdateCollectionItemAmountRequest) : Collection.Group
     suspend fun deleteItemAmount(groupId : Int, itemId : Int) : Collection.Group
 
@@ -163,19 +162,6 @@ class CollectionRepoImp(
         return@dbQuery groupEntity.toGroup()
     }
 
-//    override suspend fun addItemAmount(groupId : Int, itemId : Int, request : NewCollectionItemAmountRequest) : Collection.Group = database.dbQuery {
-//
-//        val groupEntity = CollectionGroupEntity.findById(groupId) ?: throw NotFound("groupId not found : $request.groupId ")
-//        val itemEntity = ItemRow.findById(itemId) ?: throw NotFound("item id not found : $request.itemId")
-//        CollectionItemAmountTable.insert {
-//            it[group] = groupEntity.id
-//            it[item] = itemEntity.id
-//            it[CollectionItemAmountTable.amount] = request.amount
-//        }
-//
-//        return@dbQuery groupEntity.toGroup()
-//    }
-
     override suspend fun updateItemAmount(
         groupId: Int,
         itemId: Int,
@@ -204,48 +190,6 @@ class CollectionRepoImp(
         CollectionItemAmountTable.deleteWhere { (CollectionItemAmountTable.group eq groupId) and (CollectionItemAmountTable.item eq itemId) }
         return@dbQuery groupEntity.toGroup()
     }
-
-//    override suspend fun addGroup(request : NewCollectionGroupRequest): Collection.Group = database.dbQuery {
-//        val collectionEntity = CollectionEntity.findById(request.collectionId) ?: throw NotFound("collection not found : $request.collectionId ")
-//
-//        val groupEntity = CollectionGroupEntity.new {
-//            this.collection = collectionEntity
-//            this.name = request.name
-//        }
-//
-//        return@dbQuery groupEntity.toGroup()
-//    }
-
-//    override suspend fun updateGroup(groupId: Int, request : UpdateCollectionGroupRequest): Collection.Group = database.dbQuery {
-//        val groupEntity = CollectionGroupEntity.findById(groupId) ?: throw NotFound("groupId not found : $groupId ")
-//        groupEntity.name = request.name
-//        return@dbQuery groupEntity.toGroup()
-//    }
-//
-//    override suspend fun deleteGroup(groupId: Int) = database.dbQuery {
-//        val groupEntity = CollectionGroupEntity.findById(groupId) ?: throw NotFound("groupId not found : $groupId ")
-//        CollectionItemAmountTable.deleteWhere { (group eq groupEntity.id) }
-//        groupEntity.delete()
-//    }
-
-
-
-
-
-//    override suspend fun updateItemAmount(request : UpdateCollectionItemAmountRequest) : Collection.Group = database.dbQuery {
-//        val groupEntity = CollectionGroupEntity.findById(request.groupId) ?: throw NotFound("groupId not found : $request.groupId ")
-//        val itemEntity = ItemRow.findById(request.itemId) ?: throw NotFound("item id not found : $request.itemId")
-//        CollectionItemAmountTable.update( {(CollectionItemAmountTable.group eq groupEntity.id) and (CollectionItemAmountTable.item eq itemEntity.id) }) {
-//            it[CollectionItemAmountTable.amount] = amount
-//        }
-//        return@dbQuery groupEntity.toGroup()
-//    }
-
-//    override suspend fun deleteItemAmount(request : DeleteCollectionItemAmountRequest) : Collection.Group = database.dbQuery {
-//        val groupEntity = CollectionGroupEntity.findById(request.groupId) ?: throw NotFound("groupId not found : $request.groupId ")
-//        CollectionItemAmountTable.deleteWhere { (CollectionItemAmountTable.group eq request.groupId) and (CollectionItemAmountTable.item eq request.itemId) }
-//        return@dbQuery groupEntity.toGroup()
-//    }
 }
 
 object CollectionTable : IntIdTable("Collection") {
@@ -283,7 +227,6 @@ class CollectionGroupEntity(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<CollectionGroupEntity>(CollectionGroupTable)
     var collection by CollectionEntity referencedOn CollectionGroupTable.collection
     var name by CollectionGroupTable.name
-//    val items by CollectionItemAmountEntity referrersOn CollectionItemAmountTable.group
 
     fun toGroup() : Collection.Group {
         val groupId = this.id
@@ -299,7 +242,6 @@ class CollectionGroupEntity(id: EntityID<Int>) : IntEntity(id) {
             }
         )
     }
-
 }
 
 object CollectionItemAmountTable : Table("CollectionItemAmount") {

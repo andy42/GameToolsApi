@@ -17,7 +17,6 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.SchemaUtils
 
 interface UserRepo {
-    //fun checkIfUserExists(userCredentials : UserCredentials) : Boolean
     suspend fun createUser(request : UserRegisterRequest) : User
     suspend fun verifyAndGetUser(userCredentials: UserCredentials) : User?
     suspend fun getUser(userId : Int) : User?

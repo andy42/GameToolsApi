@@ -85,7 +85,7 @@ fun Application.collectionRouting(collectionRepo: CollectionRepo, tokenManager :
                 call.respond(HttpStatusCode.OK)
             }
 
-            //new ItemId
+            //add or update new Item amount
             post("/collections/{collectionId}/{groupId}/{itemId}") {
                 val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
                 val collectionId = call.parameters["collectionId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
