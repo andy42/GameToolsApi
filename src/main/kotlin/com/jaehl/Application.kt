@@ -7,10 +7,9 @@ import com.jaehl.data.database.Database
 import com.jaehl.data.local.ObjectListJsonLoader
 import com.jaehl.data.model.EnvironmentConfig
 import com.jaehl.data.repositories.*
-import com.jaehl.models.User
+import com.jaehl.data.model.User
 import com.jaehl.models.response.ErrorResponse
 import com.jaehl.plugins.configureRouting
-import com.jaehl.data.repositories.*
 import com.jaehl.statuspages.gameStatusPages
 import com.jaehl.statuspages.generalStatusPages
 import com.jaehl.statuspages.imageStatusPage
@@ -40,7 +39,8 @@ fun Application.module() {
         databaseUsername = environment.config.property("database.userName").getString(),
         databasePassword = environment.config.property("database.password").getString(),
 
-        userHomeDirectory = "gameToolsApi"
+        userHomeDirectory = "gameToolsApi",
+        debug = true
     )
 
     val database = Database(environmentConfig)
@@ -56,6 +56,8 @@ fun Application.module() {
 
     val userRepo = UserRepoImp(
         userListLoader = ObjectListJsonLoader<User>(object : TypeToken<Array<User>>() {}.type),
+        database = database,
+        coroutineScope = this,
         passwordHashing = PasswordHashingImp()
     )
 
@@ -71,6 +73,11 @@ fun Application.module() {
     )
 
     val recipeRepo = RecipeRepoImp(
+        database = database,
+        coroutineScope = this
+    )
+
+    val collectionRepo = CollectionRepoImp(
         database = database,
         coroutineScope = this
     )
@@ -101,7 +108,7 @@ fun Application.module() {
                 status = HttpStatusCode.InternalServerError,
                 ErrorResponse(
                     code = HttpStatusCode.InternalServerError.value,
-                    message = cause.message ?: ""
+                    message = if(environmentConfig.debug) cause.message ?: "" else "InternalServerError"
                 )
             )
         }
@@ -120,6 +127,7 @@ fun Application.module() {
         gameRepo,
         imageRepo,
         itemRepo,
-        recipeRepo
+        recipeRepo,
+        collectionRepo
     )
 }

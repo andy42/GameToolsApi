@@ -27,44 +27,44 @@ class GameRepoImp(
     init {
         coroutineScope.launch {
             database.dbQuery {
-                SchemaUtils.create(Games)
+                SchemaUtils.create(GameTable)
             }
         }
     }
 
     override suspend fun addNew(name: String) = database.dbQuery {
-        val gameRow = GameRow.new {
+        val gameEntity = GameEntity.new {
             this.name = name
         }
-        return@dbQuery Game.create(gameRow)
+        return@dbQuery Game.create(gameEntity)
     }
 
     override suspend fun getGame(gameId: Int) = database.dbQuery {
-        val gameRow = GameRow.findById(gameId) ?: throw GameIdNotfound(gameId)
-        return@dbQuery Game.create(gameRow)
+        val gameEntity = GameEntity.findById(gameId) ?: throw GameIdNotfound(gameId)
+        return@dbQuery Game.create(gameEntity)
     }
 
     override suspend fun getGames(): List<Game> = database.dbQuery {
-        return@dbQuery GameRow.all().toList().map { Game.create(it) }
+        return@dbQuery GameEntity.all().toList().map { Game.create(it) }
     }
 
     override suspend fun updateGame(id: Int, name: String) = database.dbQuery {
-        val gameRow = GameRow.findById(id) ?: throw  Exception("game not found : $id")
-        gameRow.name = name
-        return@dbQuery Game.create(gameRow)
+        val gameEntity = GameEntity.findById(id) ?: throw  Exception("game not found : $id")
+        gameEntity.name = name
+        return@dbQuery Game.create(gameEntity)
     }
 
     override suspend fun deleteGame(id: Int) = database.dbQuery {
-        val gameRow = GameRow.findById(id) ?: throw  Exception("game not found : $id")
-        gameRow.delete()
+        val gameEntity = GameEntity.findById(id) ?: throw  Exception("game not found : $id")
+        gameEntity.delete()
     }
 }
 
-object Games : IntIdTable() {
+object GameTable : IntIdTable("Games") {
     val name : Column<String> = varchar("name",  50)
 }
 
-class GameRow(id: EntityID<Int>) : IntEntity(id) {
-    companion object : IntEntityClass<GameRow>(Games)
-    var name by Games.name
+class GameEntity(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<GameEntity>(GameTable)
+    var name by GameTable.name
 }

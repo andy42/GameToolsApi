@@ -13,7 +13,8 @@ fun Application.configureRouting(
     gameRepo : GameRepo,
     imageRepo : ImageRepo,
     itemRepo : ItemRepo,
-    recipeRepo : RecipeRepo
+    recipeRepo : RecipeRepo,
+    collectionRepo: CollectionRepo
 ) {
 
     routing {
@@ -27,4 +28,5 @@ fun Application.configureRouting(
     imageRouting(imageRepo, tokenManager, userRepo)
     itemRouting(itemRepo, gameRepo, tokenManager, userRepo)
     recipeRouting(recipeRepo, itemRepo, gameRepo, tokenManager, userRepo)
+    collectionRouting(collectionRepo, tokenManager, userRepo)
 }

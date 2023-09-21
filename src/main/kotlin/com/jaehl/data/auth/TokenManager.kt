@@ -4,7 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.jaehl.data.model.EnvironmentConfig
-import com.jaehl.models.User
+import com.jaehl.data.model.User
 import io.ktor.server.auth.jwt.*
 import java.util.*
 
@@ -12,7 +12,7 @@ interface TokenManager {
     fun generateJWTToken(user : User) : String
     fun createJWTVerifier() : JWTVerifier
     fun getUserName(principle : JWTPrincipal?) : String
-    fun getUserId(principle : JWTPrincipal?) : String
+    fun getUserId(principle : JWTPrincipal?) : Int
     fun getUserRole(principle : JWTPrincipal?) : User.Role
 }
 
@@ -43,8 +43,8 @@ class TokenManagerImp(
         return principle?.payload?.getClaim(userNameKey)?.asString() ?: ""
     }
 
-    override fun getUserId(principle: JWTPrincipal?): String {
-        return principle?.payload?.getClaim(userIdKey)?.asString() ?: ""
+    override fun getUserId(principle: JWTPrincipal?): Int {
+        return principle?.payload?.getClaim(userIdKey)?.asInt()?: -1
     }
 
     override fun getUserRole(principle: JWTPrincipal?): User.Role {

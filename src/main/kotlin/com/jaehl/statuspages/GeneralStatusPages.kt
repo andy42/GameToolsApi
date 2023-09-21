@@ -6,6 +6,15 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 
 fun StatusPagesConfig.generalStatusPages() {
+    status(HttpStatusCode.Unauthorized) { call, cause ->
+        call.respond(
+            status = HttpStatusCode.Unauthorized,
+            ErrorResponse(
+                code = HttpStatusCode.Unauthorized.value,
+                message = "Forbidden"
+            )
+        )
+    }
     exception<BadRequest> { call, cause ->
         call.respond(
             status = HttpStatusCode.BadRequest,
@@ -24,7 +33,17 @@ fun StatusPagesConfig.generalStatusPages() {
             )
         )
     }
+    exception<AuthorizationException> { call, cause ->
+        call.respond(
+            status = HttpStatusCode.Forbidden,
+            ErrorResponse(
+                code = HttpStatusCode.Forbidden.value,
+                message = cause.message ?: ""
+            )
+        )
+    }
 }
 
+class AuthorizationException(override val message: String? = "user not Authorized for this request") : Throwable()
 class BadRequest(override val message: String? = "BadRequest") : Throwable()
 class NotFound(override val message: String? = "NotFound") : Throwable()

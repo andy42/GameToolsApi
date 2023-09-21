@@ -2,9 +2,11 @@ package com.jaehl.controllers
 
 import com.jaehl.data.auth.TokenManager
 import com.jaehl.data.model.UserToken
-import com.jaehl.models.User
+import com.jaehl.data.model.User
 import com.jaehl.models.UserCredentials
 import com.jaehl.data.repositories.UserRepo
+import com.jaehl.models.requests.UserRegisterRequest
+import com.jaehl.models.response.toUserSanitized
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -18,13 +20,9 @@ class AuthController(
 ) {
 
     suspend fun userRegister(call: ApplicationCall) {
-        val userCredentials = call.receive<UserCredentials>()
+        val userRegisterRequest = call.receive<UserRegisterRequest>()
 
-        if(userRepo.checkIfUserExists(userCredentials)){
-            call.respond(HttpStatusCode.Conflict)
-            return
-        }
-        val user = userRepo.createUser(userCredentials)
+        val user = userRepo.createUser(userRegisterRequest)
 
         call.respond(hashMapOf("data" to UserToken( token = tokenManager.generateJWTToken(user))))
     }
@@ -51,13 +49,7 @@ class AuthController(
             return
         }
 
-        call.respond(hashMapOf("data" to
-                hashMapOf(
-                    "id" to user.id,
-                    "userName" to user.userName,
-                    "role" to user.role.value
-                )
-        ))
+        call.respond(hashMapOf("data" to user.toUserSanitized() ))
     }
 
     suspend fun users(call: ApplicationCall) {
@@ -67,12 +59,7 @@ class AuthController(
             call.respond(HttpStatusCode.Unauthorized)
             return
         }
-        call.respond(hashMapOf("data" to userRepo.getUsers().map {user ->
-            hashMapOf(
-                "id" to user.id,
-                "userName" to user.userName,
-                "role" to user.role.value
-            )
-        }))
+        call.respond(hashMapOf("data" to userRepo.getUsers().map { it.toUserSanitized() }))
+
     }
 }

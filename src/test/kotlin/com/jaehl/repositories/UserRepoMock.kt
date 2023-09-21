@@ -1,7 +1,7 @@
 package com.jaehl.repositories
 
 import com.jaehl.data.repositories.UserRepo
-import com.jaehl.models.User
+import com.jaehl.data.model.User
 import com.jaehl.models.UserCredentials
 import java.util.*
 
@@ -9,7 +9,7 @@ import java.util.*
 //do not use in live
 class UserRepoMock : UserRepo {
 
-    private val userMap = hashMapOf<String,User>()
+    private val userMap = hashMapOf<String, User>()
 
     fun clear() {
         userMap.clear()
@@ -23,14 +23,14 @@ class UserRepoMock : UserRepo {
     }
 
     override fun checkIfUserExists(userCredentials: UserCredentials): Boolean {
-        return (userMap.values.firstOrNull { it.userName ==  userCredentials.username} != null)
+        return (userMap.values.firstOrNull { it.userName ==  userCredentials.userName} != null)
     }
 
     override fun createUser(userCredentials: UserCredentials) : User {
         val newId = UUID.randomUUID().toString()
         val user = User(
             id = newId,
-            userName = userCredentials.username,
+            userName = userCredentials.userName,
             passwordHash = userCredentials.password,
             role = User.Role.User
         )
@@ -39,7 +39,7 @@ class UserRepoMock : UserRepo {
     }
 
     override fun verifyAndGetUser(userCredentials: UserCredentials): User? {
-        val user = userMap.values.firstOrNull { it.userName ==  userCredentials.username} ?: return null
+        val user = userMap.values.firstOrNull { it.userName ==  userCredentials.userName} ?: return null
         if (user.passwordHash != userCredentials.password) return null
         return user
     }
