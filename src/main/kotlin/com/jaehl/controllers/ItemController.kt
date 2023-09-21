@@ -2,7 +2,7 @@ package com.jaehl.controllers
 
 import com.jaehl.data.model.Item
 import com.jaehl.data.model.ItemCategory
-import com.jaehl.models.User
+import com.jaehl.data.model.User
 import com.jaehl.models.requests.NewCategoryRequest
 import com.jaehl.models.requests.NewItemRequest
 import com.jaehl.data.repositories.GameRepo
@@ -16,7 +16,7 @@ class ItemController (
     private val itemRepo: ItemRepo,
     private val userRepo: UserRepo
 ) {
-    suspend fun addCategory(userId : String, newCategoryRequest : NewCategoryRequest) : ItemCategory {
+    suspend fun addCategory(userId : Int, newCategoryRequest : NewCategoryRequest) : ItemCategory {
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
         return itemRepo.addCategory(newCategoryRequest.name)
     }
@@ -25,7 +25,7 @@ class ItemController (
         return itemRepo.getCategories()
     }
 
-    suspend fun addItem(userId : String, newItemRequest : NewItemRequest) : Item{
+    suspend fun addItem(userId : Int, newItemRequest : NewItemRequest) : Item{
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
         return itemRepo.addNewItem(
             name = newItemRequest.name,
@@ -35,7 +35,7 @@ class ItemController (
         )
     }
 
-    suspend fun updateItem(userId: String, itemId: Int, updateItemRequest: UpdateItemRequest) : Item{
+    suspend fun updateItem(userId: Int, itemId: Int, updateItemRequest: UpdateItemRequest) : Item{
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
         return itemRepo.updateItem(
             itemId = itemId,
@@ -55,7 +55,7 @@ class ItemController (
         return itemRepo.getItem(itemId)
     }
 
-    suspend fun deleteItem(userId : String, itemId : Int) {
+    suspend fun deleteItem(userId : Int, itemId : Int) {
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
         itemRepo.deleteItem(
             itemId = itemId

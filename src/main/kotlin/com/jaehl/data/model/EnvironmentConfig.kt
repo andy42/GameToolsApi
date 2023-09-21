@@ -11,5 +11,6 @@ data class EnvironmentConfig (
     val databaseUsername : String,
     val databasePassword : String,
 
-    val userHomeDirectory : String
+    val userHomeDirectory : String,
+    val debug : Boolean
 )

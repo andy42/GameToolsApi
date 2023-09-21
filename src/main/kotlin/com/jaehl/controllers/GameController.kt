@@ -1,7 +1,7 @@
 package com.jaehl.controllers
 
 import com.jaehl.data.repositories.GameRepo
-import com.jaehl.models.User
+import com.jaehl.data.model.User
 import com.jaehl.models.requests.NewGameRequest
 import com.jaehl.models.requests.UpdateGameRequest
 import com.jaehl.data.model.Game
@@ -15,12 +15,12 @@ class GameController(
     private val gameRepo: GameRepo,
     private val userRepo: UserRepo
 ) {
-    suspend fun addNewGame(userId : String, newGameRequest : NewGameRequest) : Game {
+    suspend fun addNewGame(userId : Int, newGameRequest : NewGameRequest) : Game {
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
         return gameRepo.addNew(newGameRequest.name) ?: throw GameNotAddedException()
     }
 
-    suspend fun updateGame(userId : String, gameId : Int, updateGameRequest : UpdateGameRequest) : Game {
+    suspend fun updateGame(userId : Int, gameId : Int, updateGameRequest : UpdateGameRequest) : Game {
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
 
         return gameRepo.updateGame(
@@ -29,7 +29,7 @@ class GameController(
         ) ?: throw GameNotUpdatedException(gameId, updateGameRequest)
     }
 
-    suspend fun deleteGame(userId : String, gameId : Int) {
+    suspend fun deleteGame(userId : Int, gameId : Int) {
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
         gameRepo.deleteGame(
             id = gameId

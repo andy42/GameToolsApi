@@ -57,7 +57,7 @@ class RecipeRepoImp(
         inputs.forEach { recipeAmount ->
             RecipeInputEntity.new {
                 this.recipe = recipeEntity
-                this.item = ItemRow.findById(recipeAmount.itemId) ?: throw ItemIdNotfound(recipeAmount.itemId)
+                this.item = ItemEntity.findById(recipeAmount.itemId) ?: throw ItemIdNotfound(recipeAmount.itemId)
                 this.amount = recipeAmount.amount
             }
         }
@@ -67,7 +67,7 @@ class RecipeRepoImp(
         outputs.forEach { recipeAmount ->
             RecipeOutPutEntity.new {
                 this.recipe = recipeEntity
-                this.item = ItemRow.findById(recipeAmount.itemId) ?: throw ItemIdNotfound(recipeAmount.itemId)
+                this.item = ItemEntity.findById(recipeAmount.itemId) ?: throw ItemIdNotfound(recipeAmount.itemId)
                 this.amount = recipeAmount.amount
             }
         }
@@ -75,12 +75,12 @@ class RecipeRepoImp(
 
     override suspend fun addRecipe(request : NewRecipeRequest): Recipe = database.dbQuery {
 
-        val game = GameRow.findById(request.gameId) ?: throw NotFound("Game not found : ${request.gameId}")
+        val game = GameEntity.findById(request.gameId) ?: throw NotFound("Game not found : ${request.gameId}")
         val recipeEntity = RecipeEntity.new {
             this.game = game.id
             this.craftedAt = SizedCollection(
                 request.craftedAt.map { itemId ->
-                    ItemRow.findById(itemId) ?: throw ItemIdNotfound(itemId)
+                    ItemEntity.findById(itemId) ?: throw ItemIdNotfound(itemId)
                 }
             )
         }
@@ -92,13 +92,13 @@ class RecipeRepoImp(
     }
 
     override suspend fun updateRecipe(recipeId : Int, request: UpdateRecipeRequest): Recipe = database.dbQuery {
-        val game = GameRow.findById(request.gameId) ?: throw NotFound("Game not found : ${request.gameId}")
+        val game = GameEntity.findById(request.gameId) ?: throw NotFound("Game not found : ${request.gameId}")
         val recipeEntity = RecipeEntity.findById(recipeId) ?: throw NotFound("recipe not found : ${recipeId}")
 
         recipeEntity.game = game.id
         recipeEntity.craftedAt = SizedCollection(
             request.craftedAt.map { itemId ->
-                ItemRow.findById(itemId) ?: throw ItemIdNotfound(itemId)
+                ItemEntity.findById(itemId) ?: throw ItemIdNotfound(itemId)
             }
         )
 
@@ -119,7 +119,7 @@ class RecipeRepoImp(
     override suspend fun getRecipes(gameId: Int?): List<Recipe> = database.dbQuery {
 
         if(gameId != null){
-            val game = GameRow.findById(gameId) ?: throw GameIdNotfound(gameId)
+            val game = GameEntity.findById(gameId) ?: throw GameIdNotfound(gameId)
             return@dbQuery RecipeEntity.find { RecipeTable.game eq game.id }.toList().map { it.toRecipe() }
         }
         else {
@@ -133,13 +133,13 @@ class RecipeRepoImp(
 }
 
 object RecipeTable : IntIdTable("recipes") {
-    val game = reference("game_id", Games)
+    val game = reference("game_id", GameTable)
 }
 
 class RecipeEntity(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<RecipeEntity>(RecipeTable)
     var game by RecipeTable.game
-    var craftedAt by ItemRow via RecipeCraftedAtTable
+    var craftedAt by ItemEntity via RecipeCraftedAtTable
     val input by RecipeInputEntity referrersOn RecipeInputTable.recipe
     val output by RecipeOutPutEntity referrersOn RecipeOutputTable.recipe
 
@@ -168,32 +168,32 @@ class RecipeEntity(id: EntityID<Int>) : IntEntity(id) {
 
 object RecipeCraftedAtTable : Table("recipe_crafted_at") {
     val recipe = reference("recipe_id", RecipeTable)
-    val item = reference("item_id", Items)
+    val item = reference("item_id", ItemTable)
     override val primaryKey = PrimaryKey(recipe, item)
 }
 
 object RecipeInputTable : IntIdTable("recipe_inputs") {
     val recipe = reference("recipe_id", RecipeTable)
-    val item = reference("item_id", Items)
+    val item = reference("item_id", ItemTable)
     val amount = integer("amount")
 }
 
 class RecipeInputEntity(id: EntityID<Int>) : Entity<Int>(id) {
     companion object : EntityClass<Int, RecipeInputEntity>(RecipeInputTable)
     var recipe by RecipeEntity referencedOn RecipeInputTable.recipe
-    var item by ItemRow referencedOn  RecipeInputTable.item
+    var item by ItemEntity referencedOn  RecipeInputTable.item
     var amount by RecipeInputTable.amount
 }
 
 object RecipeOutputTable : IntIdTable("recipe_outputs") {
     val recipe = reference("recipe_id", RecipeTable)
-    val item = reference("item_id", Items)
+    val item = reference("item_id", ItemTable)
     val amount = integer("amount")
 }
 
 class RecipeOutPutEntity(id: EntityID<Int>) : Entity<Int>(id) {
     companion object : EntityClass<Int, RecipeOutPutEntity>(RecipeOutputTable)
     var recipe by RecipeEntity referencedOn RecipeOutputTable.recipe
-    var item by ItemRow referencedOn RecipeOutputTable.item
+    var item by ItemEntity referencedOn RecipeOutputTable.item
     var amount by RecipeOutputTable.amount
 }

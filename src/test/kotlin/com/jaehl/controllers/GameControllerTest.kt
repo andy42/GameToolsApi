@@ -1,6 +1,6 @@
 package com.jaehl.controllers
 
-import com.jaehl.models.User
+import com.jaehl.data.model.User
 import com.jaehl.models.UserCredentials
 import com.jaehl.models.requests.NewGameRequest
 import com.jaehl.models.requests.UpdateGameRequest
@@ -31,7 +31,7 @@ class GameControllerTest {
     @Test
     fun `addNewGame with admin account creates game`() = runTest {
         val controller = createGameController()
-        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        val user = userRepo.createUser(UserCredentials(userName = "userName", password = "password"))
         userRepo.setUserRole(user.id, User.Role.Admin)
 
         val gameName = "test1"
@@ -47,7 +47,7 @@ class GameControllerTest {
     @Test
     fun `addNewGame with user account creates error`() = runTest {
         val controller = createGameController()
-        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        val user = userRepo.createUser(UserCredentials(userName = "userName", password = "password"))
         userRepo.setUserRole(user.id, User.Role.User)
 
         val gameName = "test1"
@@ -64,7 +64,7 @@ class GameControllerTest {
     @Test
     fun `updateGame with admin account updates game`() = runTest {
         val controller = createGameController()
-        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        val user = userRepo.createUser(UserCredentials(userName = "userName", password = "password"))
         userRepo.setUserRole(user.id, User.Role.Admin)
 
         val game = gameRepo.addNew("testGame")
@@ -83,7 +83,7 @@ class GameControllerTest {
     @Test
     fun `updateGame with user account throws error`() = runTest {
         val controller = createGameController()
-        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        val user = userRepo.createUser(UserCredentials(userName = "userName", password = "password"))
         userRepo.setUserRole(user.id, User.Role.User)
 
         val game = gameRepo.addNew("testGame")
@@ -102,7 +102,7 @@ class GameControllerTest {
     @Test
     fun `deleteGame with admin account deletes game`() = runTest {
         val controller = createGameController()
-        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        val user = userRepo.createUser(UserCredentials(userName = "userName", password = "password"))
         userRepo.setUserRole(user.id, User.Role.Admin)
 
         val game = gameRepo.addNew("testGame")
@@ -118,7 +118,7 @@ class GameControllerTest {
     @Test
     fun `deleteGame with user account throws error`() = runTest {
         val controller = createGameController()
-        val user = userRepo.createUser(UserCredentials(username = "userName", password = "password"))
+        val user = userRepo.createUser(UserCredentials(userName = "userName", password = "password"))
         userRepo.setUserRole(user.id, User.Role.User)
 
         val game = gameRepo.addNew("testGame")

@@ -1,6 +1,6 @@
 package com.jaehl.data.model
 
-import com.jaehl.data.repositories.GameRow
+import com.jaehl.data.repositories.GameEntity
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -9,7 +9,7 @@ data class Game(
     val name : String
 ) {
     companion object {
-        fun create(game : GameRow) : Game {
+        fun create(game : GameEntity) : Game {
             return Game(
                 id = game.id.value,
                 name = game.name

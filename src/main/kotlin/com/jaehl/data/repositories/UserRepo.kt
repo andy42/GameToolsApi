@@ -1,94 +1,89 @@
 package com.jaehl.data.repositories
 
 import com.jaehl.data.auth.PasswordHashing
+import com.jaehl.data.database.Database
 import com.jaehl.data.local.ObjectListLoader
-import com.jaehl.models.User
+import com.jaehl.data.model.User
 import com.jaehl.models.UserCredentials
-import java.io.File
-import java.nio.file.Paths
-import java.util.*
-import kotlin.collections.HashMap
-import kotlin.io.path.createDirectory
-import kotlin.io.path.exists
+import com.jaehl.models.requests.UserRegisterRequest
+import com.jaehl.statuspages.AuthorizationException
+import com.jaehl.statuspages.BadRequest
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import org.jetbrains.exposed.dao.IntEntity
+import org.jetbrains.exposed.dao.IntEntityClass
+import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.sql.SchemaUtils
 
 interface UserRepo {
-    fun checkIfUserExists(userCredentials : UserCredentials) : Boolean
-    fun createUser(userCredentials : UserCredentials) : User
-    fun verifyAndGetUser(userCredentials: UserCredentials) : User?
-    fun getUser(userId : String) : User?
-    fun getUsers() : List<User>
+    suspend fun createUser(request : UserRegisterRequest) : User
+    suspend fun verifyAndGetUser(userCredentials: UserCredentials) : User?
+    suspend fun getUser(userId : Int) : User?
+    suspend fun getUsers() : List<User>
 }
 
 class UserRepoImp(
     private val userListLoader : ObjectListLoader<User>,
+    private val database: Database,
+    private val coroutineScope: CoroutineScope,
     private val passwordHashing : PasswordHashing
 ) : UserRepo {
 
-    private val users = HashMap<String, User>()
-
     init {
-        testLoadLocal().forEach { user ->
-            users[user.id] = user
-        }
-    }
+        coroutineScope.launch {
 
-    private fun getUserFile() : File {
-        val userDirectory = Paths.get(System.getProperty("user.home"), "todoApiData")
-        if( !userDirectory.exists()){
-            userDirectory.createDirectory()
-        }
-        val userDirectoryFile = userDirectory.toFile()
-        return Paths.get(userDirectoryFile.absolutePath, "users.json").toFile()
-    }
-
-    private fun testLoadLocal() : List<User> {
-        val userFile = getUserFile()
-        if(!userFile.exists()) return listOf()
-        return userListLoader.load(userFile)
-    }
-
-    private fun getUserByUserName(userName : String) : User? {
-        return users.values.firstOrNull {it.userName == userName}
-    }
-
-    override fun checkIfUserExists(userCredentials: UserCredentials): Boolean {
-        return getUserByUserName(userCredentials.username) != null
-    }
-
-    private fun createNewId() : String {
-        while (true){
-            val newId = UUID.randomUUID().toString()
-            if(!users.containsKey(newId)){
-                return newId
+            database.dbQuery {
+                SchemaUtils.create(UserTable)
             }
         }
     }
 
-    override fun createUser(userCredentials : UserCredentials) : User {
-        val userId = createNewId()
-        val newUser = User(
-            id = userId,
-            userName = userCredentials.username,
-            passwordHash = passwordHashing.hashPassword(userCredentials.password),
-            role = User.Role.User
+    override suspend fun createUser(request : UserRegisterRequest): User = database.dbQuery {
+        return@dbQuery UserEntity.new {
+            userName = request.userName
+            email = request.email
+            passwordHash = passwordHashing.hashPassword(request.password)
+            role = User.Role.User.value
+        }.toUser()
+    }
+
+    override suspend fun verifyAndGetUser(userCredentials: UserCredentials): User? = database.dbQuery {
+        val user = UserEntity.find { UserTable.userName eq userCredentials.userName }.firstOrNull() ?: throw AuthorizationException()
+         return@dbQuery if (!passwordHashing.verifyPassword(userCredentials.password, user.passwordHash) ) null
+        else user.toUser()
+    }
+
+    override suspend fun getUser(userId: Int): User? = database.dbQuery {
+        return@dbQuery UserEntity.findById(userId)?.toUser()
+    }
+
+    override suspend fun getUsers(): List<User> = database.dbQuery {
+        return@dbQuery UserEntity.all().map { it.toUser() }
+    }
+}
+
+object UserTable : IntIdTable() {
+    val userName = varchar("userName",  50).uniqueIndex()
+    val email = varchar("email",  100).uniqueIndex()
+    val passwordHash = varchar("passwordHash",  100)
+    val role = varchar("role", 100)
+}
+
+class UserEntity(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<UserEntity>(UserTable)
+    var userName by UserTable.userName
+    var email by UserTable.email
+    var passwordHash by UserTable.passwordHash
+    var role by UserTable.role
+
+    fun toUser() : User {
+        return User(
+            id = this.id.value,
+            userName = this.userName,
+            email = this.email,
+            passwordHash = this.passwordHash,
+            role = User.Role.createByName(this.role) ?: throw BadRequest("role not found")
         )
-        users[userId] = newUser
-        getUserFile()
-        userListLoader.save(getUserFile(), users.values.toList())
-        return newUser
-    }
-
-    override fun verifyAndGetUser(userCredentials: UserCredentials) : User? {
-        val user = getUserByUserName(userCredentials.username) ?: return null
-        if (!passwordHashing.verifyPassword(userCredentials.password, user.passwordHash) ) return null
-        return user
-    }
-
-    override fun getUser(userId: String): User? {
-        return users[userId]
-    }
-
-    override fun getUsers(): List<User> {
-        return users.values.toList()
     }
 }

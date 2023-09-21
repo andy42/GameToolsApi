@@ -1,11 +1,13 @@
 package com.jaehl.controllers
 
+import com.jaehl.data.model.Collection
 import com.jaehl.data.model.Recipe
 import com.jaehl.data.repositories.GameRepo
 import com.jaehl.data.repositories.ItemRepo
 import com.jaehl.data.repositories.RecipeRepo
 import com.jaehl.data.repositories.UserRepo
-import com.jaehl.models.User
+import com.jaehl.data.model.User
+import com.jaehl.models.requests.NewCollectionGroupRequest
 import com.jaehl.models.requests.NewRecipeRequest
 import com.jaehl.models.requests.UpdateRecipeRequest
 import com.jaehl.statuspages.AuthorizationException
@@ -16,17 +18,17 @@ class RecipeController(
     private val itemRepo: ItemRepo,
     private val userRepo: UserRepo
 ) {
-    suspend fun addRecipe(userId : String, newRecipeRequest : NewRecipeRequest) : Recipe {
+    suspend fun addRecipe(userId : Int, newRecipeRequest : NewRecipeRequest) : Recipe {
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
         return recipeRepo.addRecipe(newRecipeRequest)
     }
 
-    suspend fun updateRecipe(userId : String, recipeId : Int, newRecipeRequest : UpdateRecipeRequest) : Recipe {
+    suspend fun updateRecipe(userId : Int, recipeId : Int, newRecipeRequest : UpdateRecipeRequest) : Recipe {
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
         return recipeRepo.updateRecipe(recipeId, newRecipeRequest)
     }
 
-    suspend fun deleteRecipe(userId : String, recipeId : Int) {
+    suspend fun deleteRecipe(userId : Int, recipeId : Int) {
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
         return recipeRepo.deleteRecipe(recipeId)
     }

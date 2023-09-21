@@ -33,15 +33,15 @@ class ImageRepoImp(
     init {
         coroutineScope.launch {
             database.dbQuery {
-                SchemaUtils.create(Images)
+                SchemaUtils.create(ImageTable)
             }
         }
     }
 
     override suspend fun addNew(description : String, data: ByteArray): Int = database.dbQuery {
 
-        val imageId = Images.insertAndGetId {
-            it[Images.description] = description
+        val imageId = ImageTable.insertAndGetId {
+            it[ImageTable.description] = description
             it[path] = "blank.png"
         }
 
@@ -51,20 +51,20 @@ class ImageRepoImp(
         outputStream.write(data)
         outputStream.close()
 
-        val imageRow = ImageRow.findById(imageId) ?: throw  ImageIdNotfound(imageId.value)
-        imageRow.path = imageFileName
+        val imageEntity = ImageEntity.findById(imageId) ?: throw  ImageIdNotfound(imageId.value)
+        imageEntity.path = imageFileName
 
         return@dbQuery imageId.value
     }
 
     override suspend fun getImagePath(imageId: Int): String? = database.dbQuery {
-        val imageRow = ImageRow.findById(imageId) ?: throw ImageIdNotfound(imageId)
-        return@dbQuery imageRow.path
+        val imageEntity = ImageEntity.findById(imageId) ?: throw ImageIdNotfound(imageId)
+        return@dbQuery imageEntity.path
     }
 
     override suspend fun getImageFile(imageId: Int): File = database.dbQuery {
-        val imageRow = ImageRow.findById(imageId) ?: throw ImageIdNotfound(imageId)
-        return@dbQuery LocalFiles.getFile(environmentConfig.userHomeDirectory, imageRow.path)
+        val imageEntity = ImageEntity.findById(imageId) ?: throw ImageIdNotfound(imageId)
+        return@dbQuery LocalFiles.getFile(environmentConfig.userHomeDirectory, imageEntity.path)
     }
 
     override suspend fun updateImage(imageId : Int, data: ByteArray) = database.dbQuery {
@@ -72,23 +72,23 @@ class ImageRepoImp(
     }
 
     override suspend fun deleteImage(imageId: Int) = database.dbQuery {
-        val imageRow = ImageRow.findById(imageId) ?: throw  ImageIdNotfound(imageId)
-        val imageFile = LocalFiles.getFile(environmentConfig.userHomeDirectory, imageRow.path)
+        val imageEntity = ImageEntity.findById(imageId) ?: throw  ImageIdNotfound(imageId)
+        val imageFile = LocalFiles.getFile(environmentConfig.userHomeDirectory, imageEntity.path)
         if(imageFile.exists()){
             imageFile.delete()
         }
-        imageRow.delete()
+        imageEntity.delete()
     }
 }
 
-object Images : IntIdTable() {
+object ImageTable : IntIdTable("Images") {
     val description : Column<String> = varchar("description",  50)
     val path : Column<String> = varchar("path",  50)
 
 }
 
-class ImageRow(id: EntityID<Int>) : IntEntity(id) {
-    companion object : IntEntityClass<ImageRow>(Images)
-    var description by Images.description
-    var path by Images.path
+class ImageEntity(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<ImageEntity>(ImageTable)
+    var description by ImageTable.description
+    var path by ImageTable.path
 }

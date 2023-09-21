@@ -33,115 +33,115 @@ class ItemRepoImp(
     init {
         coroutineScope.launch {
             database.dbQuery {
-                SchemaUtils.create(Items)
-                SchemaUtils.create(Categories)
-                SchemaUtils.create(ItemCategories)
+                SchemaUtils.create(ItemTable)
+                SchemaUtils.create(CategorieTable)
+                SchemaUtils.create(ItemCategorieTable)
             }
         }
     }
 
-    private fun convertItemRow(itemRow: ItemRow) : Item {
+    private fun convertItemRow(itemEntity: ItemEntity) : Item {
         return Item(
-            id = itemRow.id.value,
-            name = itemRow.name,
-            categories = itemRow.categories.map { convertCategoryRow(it) },
-            image = itemRow.image.value,
-            game = itemRow.game.value
+            id = itemEntity.id.value,
+            name = itemEntity.name,
+            categories = itemEntity.categories.map { convertCategoryRow(it) },
+            image = itemEntity.image.value,
+            game = itemEntity.game.value
         )
     }
 
-    private fun convertCategoryRow(categoryRow: CategoryRow) : ItemCategory {
+    private fun convertCategoryRow(categoryEntity: CategoryEntity) : ItemCategory {
         return ItemCategory(
-            id = categoryRow.id.value,
-            name = categoryRow.name
+            id = categoryEntity.id.value,
+            name = categoryEntity.name
         )
     }
 
     override suspend fun addNewItem(gameId : Int, name: String, imageId : Int, categories : List<Int>): Item = database.dbQuery {
-        val image = ImageRow.findById(imageId) ?: throw ImageIdNotfound(imageId)
-        val game = GameRow.findById(gameId) ?: throw GameIdNotfound(gameId)
-        val itemRow = ItemRow.new {
+        val image = ImageEntity.findById(imageId) ?: throw ImageIdNotfound(imageId)
+        val game = GameEntity.findById(gameId) ?: throw GameIdNotfound(gameId)
+        val itemEntity = ItemEntity.new {
             this.name = name
             this.image = image.id
             this.game = game.id
             this.categories = SizedCollection(
                 categories.map {categoryId ->
-                    CategoryRow.findById(categoryId) ?: throw CategoryIdNotfound(categoryId)
+                    CategoryEntity.findById(categoryId) ?: throw CategoryIdNotfound(categoryId)
                 }
             )
         }
-        return@dbQuery convertItemRow(itemRow)
+        return@dbQuery convertItemRow(itemEntity)
     }
 
     override suspend fun updateItem(itemId: Int, request: UpdateItemRequest): Item = database.dbQuery {
-        val image = ImageRow.findById(request.image) ?: throw ImageIdNotfound(request.image)
-        val game = GameRow.findById(request.game) ?: throw GameIdNotfound(request.game)
-        val itemRow = ItemRow.findById(itemId) ?: throw NotFound("item not found $itemId")
+        val image = ImageEntity.findById(request.image) ?: throw ImageIdNotfound(request.image)
+        val game = GameEntity.findById(request.game) ?: throw GameIdNotfound(request.game)
+        val itemEntity = ItemEntity.findById(itemId) ?: throw NotFound("item not found $itemId")
 
-        itemRow.name = request.name
-        itemRow.image = image.id
-        itemRow.game = game.id
-        itemRow.categories = SizedCollection(
+        itemEntity.name = request.name
+        itemEntity.image = image.id
+        itemEntity.game = game.id
+        itemEntity.categories = SizedCollection(
             request.categories.map {categoryId ->
-                CategoryRow.findById(categoryId) ?: throw CategoryIdNotfound(categoryId)
+                CategoryEntity.findById(categoryId) ?: throw CategoryIdNotfound(categoryId)
             }
         )
 
-        return@dbQuery convertItemRow(itemRow)
+        return@dbQuery convertItemRow(itemEntity)
     }
 
     override suspend fun getItem(itemId: Int): Item = database.dbQuery {
-        val itemRow = ItemRow.findById(itemId) ?: throw ItemIdNotfound(itemId)
-        return@dbQuery convertItemRow(itemRow)
+        val itemEntity = ItemEntity.findById(itemId) ?: throw ItemIdNotfound(itemId)
+        return@dbQuery convertItemRow(itemEntity)
     }
 
     override suspend fun getItems(): List<Item> = database.dbQuery {
-        return@dbQuery ItemRow.all().toList().map { convertItemRow(it) }
+        return@dbQuery ItemEntity.all().toList().map { convertItemRow(it) }
     }
 
     override suspend fun deleteItem(itemId: Int) = database.dbQuery {
-        val itemRow = ItemRow.findById(itemId) ?: throw  Exception("Item not found : $itemId")
-        ItemCategories.deleteWhere { item eq itemId}
-        itemRow.delete()
+        val itemEntity = ItemEntity.findById(itemId) ?: throw  Exception("Item not found : $itemId")
+        ItemCategorieTable.deleteWhere { item eq itemId}
+        itemEntity.delete()
     }
 
     override suspend fun addCategory(name: String): ItemCategory = database.dbQuery {
-        val categoryRow = CategoryRow.new {
+        val categoryEntity = CategoryEntity.new {
             this.name = name
         }
-        return@dbQuery convertCategoryRow(categoryRow)
+        return@dbQuery convertCategoryRow(categoryEntity)
     }
 
     override suspend fun getCategories(): List<ItemCategory> = database.dbQuery {
-        return@dbQuery CategoryRow.all().toList().map { convertCategoryRow(it) }
+        return@dbQuery CategoryEntity.all().toList().map { convertCategoryRow(it) }
     }
 }
 
-object Items : IntIdTable() {
+object ItemTable : IntIdTable("Items") {
     val name : Column<String> = varchar("name",  50)
-    val image = reference("image_id", Images)
-    val game = reference("game_id", Games)
+    val image = reference("image_id", ImageTable)
+    val game = reference("game_id", GameTable)
 }
 
-class ItemRow(id: EntityID<Int>) : IntEntity(id) {
-    companion object : IntEntityClass<ItemRow>(Items)
-    var name by Items.name
-    var image by Items.image
-    var game by Items.game
-    var categories by CategoryRow via ItemCategories
+class ItemEntity(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<ItemEntity>(ItemTable)
+    var name by ItemTable.name
+    var image by ItemTable.image
+    var game by ItemTable.game
+    var categories by CategoryEntity via ItemCategorieTable
 }
 
-object Categories : IntIdTable() {
+object CategorieTable : IntIdTable("Categories") {
     val name = varchar("name", 100)
 }
 
-class CategoryRow(id: EntityID<Int>) : IntEntity(id) {
-    companion object : IntEntityClass<CategoryRow>(Categories)
-    var name by Categories.name
+class CategoryEntity(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<CategoryEntity>(CategorieTable)
+    var name by CategorieTable.name
 }
 
-object ItemCategories : Table() {
-    val item = reference("item_id", Items)
-    val category = reference("category_id", Categories)
+object ItemCategorieTable : Table("ItemCategories") {
+    val item = reference("item_id", ItemTable)
+    val category = reference("category_id", CategorieTable)
     override val primaryKey = PrimaryKey(item, category)
 }

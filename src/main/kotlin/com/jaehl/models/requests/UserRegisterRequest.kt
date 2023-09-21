@@ -1,9 +1,10 @@
-package com.jaehl.models
+package com.jaehl.models.requests
 
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserCredentials(
+data class UserRegisterRequest(
     val userName : String,
+    val email : String,
     val password : String
 )
