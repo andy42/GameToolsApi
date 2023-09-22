@@ -30,7 +30,7 @@ class RecipeController(
 
     suspend fun deleteRecipe(userId : Int, recipeId : Int) {
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
-        return recipeRepo.deleteRecipe(recipeId)
+        recipeRepo.deleteRecipe(recipeId)
     }
 
     suspend fun getRecipes(gameId : Int?) : List<Recipe> {
