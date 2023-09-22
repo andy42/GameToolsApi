@@ -113,6 +113,9 @@ class RecipeRepoImp(
 
     override suspend fun deleteRecipe(recipeId: Int) = database.dbQuery {
         val recipeEntity = RecipeEntity.findById(recipeId) ?: throw NotFound("recipe not found : ${recipeId}")
+        RecipeCraftedAtTable.deleteWhere { recipe eq recipeId }
+        RecipeInputTable.deleteWhere { recipe eq recipeId }
+        RecipeOutputTable.deleteWhere { recipe eq recipeId }
         recipeEntity.delete()
     }
 
