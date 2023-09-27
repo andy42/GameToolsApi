@@ -7,6 +7,8 @@ import com.jaehl.data.model.EnvironmentConfig
 import com.jaehl.data.model.User
 import io.ktor.server.auth.jwt.*
 import java.util.*
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.DurationUnit
 
 interface TokenManager {
     fun generateJWTToken(user : User) : String
@@ -27,7 +29,7 @@ class TokenManagerImp(
             .withClaim(userNameKey, user.userName)
             .withClaim(userIdKey, user.id)
             .withClaim(userRoleKey, user.role.value)
-            .withExpiresAt(Date(System.currentTimeMillis() + 1000*60*60*24))
+            .withExpiresAt(Date(System.currentTimeMillis() + 24.hours.toLong(DurationUnit.MILLISECONDS)))
             .sign(Algorithm.HMAC256(environmentConfig.jwtSecret))
     }
 

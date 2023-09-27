@@ -120,7 +120,6 @@ class RecipeRepoImp(
     }
 
     override suspend fun getRecipes(gameId: Int?): List<Recipe> = database.dbQuery {
-
         if(gameId != null){
             val game = GameEntity.findById(gameId) ?: throw GameIdNotfound(gameId)
             return@dbQuery RecipeEntity.find { RecipeTable.game eq game.id }.toList().map { it.toRecipe() }
