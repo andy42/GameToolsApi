@@ -4,6 +4,8 @@ import com.jaehl.controllers.ImageController
 import com.jaehl.data.auth.TokenManager
 import com.jaehl.data.repositories.ImageRepo
 import com.jaehl.data.repositories.UserRepo
+import com.jaehl.models.ImageType
+import com.jaehl.statuspages.BadRequest
 import com.jaehl.statuspages.ImageDataNotFound
 import com.jaehl.statuspages.ImageIdBadRequest
 import io.ktor.http.*
@@ -28,6 +30,7 @@ fun Application.imageRouting(imageRepo: ImageRepo, tokenManager : TokenManager, 
                 val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
                 var imageId = -1
                 var description = ""
+                var imageType = ImageType.NotSupported
                 var data : ByteArray? = null
 
                 val multipartData = call.receiveMultipart()
@@ -36,6 +39,9 @@ fun Application.imageRouting(imageRepo: ImageRepo, tokenManager : TokenManager, 
                         is PartData.FormItem -> {
                             if(part.name == "description"){
                                 description = part.value
+                            }
+                            if(part.name == "imageType"){
+                                imageType = ImageType.from(part.value.toInt())
                             }
                         }
                         is PartData.FileItem -> {
@@ -48,8 +54,9 @@ fun Application.imageRouting(imageRepo: ImageRepo, tokenManager : TokenManager, 
                 }
 
                 if(data == null) throw ImageDataNotFound(imageId)
+                if(imageType == ImageType.NotSupported) throw BadRequest("missing imageType")
                 data?.let { data ->
-                    imageId = imageController.addNew(userId, description, data)
+                    imageId = imageController.addNew(userId, imageType, description, data)
                 }
 
                 call.respond(
@@ -58,8 +65,24 @@ fun Application.imageRouting(imageRepo: ImageRepo, tokenManager : TokenManager, 
 
             get ("/images/{id}") {
                 val id = call.parameters["id"]?.toInt() ?: throw ImageIdBadRequest()
-                call.respondBytes(imageController.getImageData(id), ContentType.Image.PNG)
+                val imageData = imageController.getImageData(id)
+                call.respondBytes(imageData.file.readBytes(), imageTypeToContentType(imageData.imageType))
+            }
+
+            get ("/images") {
+                val images = imageController.getImages()
+                call.respond(
+                    hashMapOf("data" to images))
             }
         }
+    }
+}
+
+fun imageTypeToContentType(imageType: ImageType) : ContentType{
+    return when(imageType){
+        ImageType.Png -> ContentType.Image.PNG
+        ImageType.Webp -> ContentType("image", "webp")
+        ImageType.Jpeg -> ContentType.Image.JPEG
+        else -> throw Exception("unsupported image type")
     }
 }
