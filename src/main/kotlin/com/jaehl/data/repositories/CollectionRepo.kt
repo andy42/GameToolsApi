@@ -98,6 +98,7 @@ class CollectionRepoImp(
                     CollectionGroupEntity.findById(groupModel.id)
                         ?: throw NotFound("CollectionGroup not found : ${groupModel.id} ")
                 }
+                groupEntity.name = groupModel.name
 
                 groupModel.itemAmounts.forEach { itemAmounts ->
                     val itemEntity = ItemEntity.findById(itemAmounts.itemId)

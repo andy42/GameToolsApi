@@ -4,5 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class NewGameRequest (
-    val name : String
+    val name : String,
+    val icon : Int,
+    val banner : Int
 )

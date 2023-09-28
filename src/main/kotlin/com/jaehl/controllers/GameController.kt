@@ -17,7 +17,7 @@ class GameController(
 ) {
     suspend fun addNewGame(userId : Int, newGameRequest : NewGameRequest) : Game {
         if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
-        return gameRepo.addNew(newGameRequest.name) ?: throw GameNotAddedException()
+        return gameRepo.addNew(newGameRequest) ?: throw GameNotAddedException()
     }
 
     suspend fun updateGame(userId : Int, gameId : Int, updateGameRequest : UpdateGameRequest) : Game {
@@ -25,7 +25,7 @@ class GameController(
 
         return gameRepo.updateGame(
             id = gameId,
-            name = updateGameRequest.name
+            request = updateGameRequest
         ) ?: throw GameNotUpdatedException(gameId, updateGameRequest)
     }
 
