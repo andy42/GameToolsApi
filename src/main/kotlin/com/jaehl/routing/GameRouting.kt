@@ -6,6 +6,7 @@ import com.jaehl.data.repositories.GameRepo
 import com.jaehl.models.requests.NewGameRequest
 import com.jaehl.models.requests.UpdateGameRequest
 import com.jaehl.data.repositories.UserRepo
+import com.jaehl.statuspages.BadRequest
 import com.jaehl.statuspages.GameIdBadRequest
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -26,36 +27,43 @@ fun Application.gameRouting(gameRepo: GameRepo, tokenManager : TokenManager, use
         authenticate("auth-jwt") {
 
             post("/games/new") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val newGameRequest = call.receive<NewGameRequest>()
-                val response = gameController.addNewGame(userId, newGameRequest)
+                val response = gameController.addNewGame(tokenData, newGameRequest)
                 call.respond(hashMapOf("data" to response))
             }
 
             post("/games/{id}") {
                 val gameId = call.parameters["id"]?.toInt() ?: throw GameIdBadRequest()
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val updateGameRequest = call.receive<UpdateGameRequest>()
-                val response = gameController.updateGame(userId, gameId, updateGameRequest)
+                val response = gameController.updateGame(tokenData, gameId, updateGameRequest)
                 call.respond(hashMapOf("data" to response))
             }
 
             delete ("/games/{id}") {
                 val id = call.parameters["id"]?.toInt() ?: throw GameIdBadRequest()
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
-                gameController.deleteGame(userId, id)
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                gameController.deleteGame(tokenData, id)
                 call.respond(HttpStatusCode.OK)
 
             }
 
             get("/games/{id}"){
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val id = call.parameters["id"]?.toInt() ?: throw GameIdBadRequest()
-                val response = gameController.getGame(id)
+                val response = gameController.getGame(tokenData, id)
                 call.respond(hashMapOf("data" to response))
             }
 
             get("/games"){
-                val response = gameController.getAllGames()
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                val response = gameController.getAllGames(tokenData)
                 call.respond(hashMapOf("data" to response))
             }
         }

@@ -3,6 +3,7 @@ package com.jaehl.data.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserToken(
-    val token : String
+data class UserTokens(
+    val refreshToken : String,
+    val accessToken : String
 )

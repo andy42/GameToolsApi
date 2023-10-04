@@ -13,6 +13,7 @@ data class User(
     @Serializable
     enum class Role (val value : String){
         Admin("Admin"),
+        Contributor("Contributor"),
         User("User");
 
         companion object {

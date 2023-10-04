@@ -27,7 +27,8 @@ fun Application.imageRouting(imageRepo: ImageRepo, tokenManager : TokenManager, 
     routing {
         authenticate("auth-jwt") {
             post("/images/new") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 var imageId = -1
                 var description = ""
                 var imageType = ImageType.NotSupported
@@ -56,7 +57,7 @@ fun Application.imageRouting(imageRepo: ImageRepo, tokenManager : TokenManager, 
                 if(data == null) throw ImageDataNotFound(imageId)
                 if(imageType == ImageType.NotSupported) throw BadRequest("missing imageType")
                 data?.let { data ->
-                    imageId = imageController.addNew(userId, imageType, description, data)
+                    imageId = imageController.addNew(tokenData, imageType, description, data)
                 }
 
                 call.respond(
@@ -64,13 +65,17 @@ fun Application.imageRouting(imageRepo: ImageRepo, tokenManager : TokenManager, 
             }
 
             get ("/images/{id}") {
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val id = call.parameters["id"]?.toInt() ?: throw ImageIdBadRequest()
-                val imageData = imageController.getImageData(id)
+                val imageData = imageController.getImageData(tokenData, id)
                 call.respondBytes(imageData.file.readBytes(), imageTypeToContentType(imageData.imageType))
             }
 
             get ("/images") {
-                val images = imageController.getImages()
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                val images = imageController.getImages(tokenData)
                 call.respond(
                     hashMapOf("data" to images))
             }

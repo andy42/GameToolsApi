@@ -1,29 +1,34 @@
 package com.jaehl.controllers
 
+import com.jaehl.data.auth.TokenType
 import com.jaehl.data.model.ImageMetaData
+import com.jaehl.data.model.TokenData
 import com.jaehl.data.model.User
 import com.jaehl.data.repositories.ImageRepo
 import com.jaehl.data.repositories.UserRepo
 import com.jaehl.models.ImageData
 import com.jaehl.models.ImageType
+import com.jaehl.routing.Controller
 import com.jaehl.statuspages.AuthorizationException
 
 class ImageController(
     private val imageRepo : ImageRepo,
     private val userRepo: UserRepo
-) {
+) : Controller {
 
-    suspend fun addNew(userId : Int, imageType : ImageType, description : String, data : ByteArray) : Int{
-        if (userRepo.getUser(userId)?.role != User.Role.Admin) throw AuthorizationException()
-        return imageRepo.addNew(imageType, description, data)
+    suspend fun addNew(tokenData : TokenData, imageType : ImageType, description : String, data : ByteArray) : Int =
+        accessTokenCallWithRole(userRepo, tokenData, listOf(User.Role.Admin)){
+            if (userRepo.getUser(tokenData.userId)?.role != User.Role.Admin) throw AuthorizationException()
+            return@accessTokenCallWithRole imageRepo.addNew(imageType, description, data)
     }
 
-    suspend fun getImageData(imageId : Int) : ImageData {
+    suspend fun getImageData(tokenData : TokenData, imageId : Int) : ImageData {
+        if(tokenData.tokenType != TokenType.RefreshToken) throw AuthorizationException()
         return imageRepo.getImageFile(imageId)
     }
 
-    suspend fun getImages() : List<ImageMetaData> {
-        return imageRepo.getImages()
+    suspend fun getImages(tokenData : TokenData) : List<ImageMetaData> = accessTokenCall(tokenData) {
+        return@accessTokenCall imageRepo.getImages()
     }
 
 }

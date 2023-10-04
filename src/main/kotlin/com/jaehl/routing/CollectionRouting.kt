@@ -25,86 +25,95 @@ fun Application.collectionRouting(collectionRepo: CollectionRepo, tokenManager :
     routing {
         authenticate("auth-jwt") {
             post("/collections/new") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val newCollectionRequest = call.receive<NewCollectionRequest>()
-                val response = collectionController.addCollection(userId, newCollectionRequest)
+                val response = collectionController.addCollection(tokenData, newCollectionRequest)
                 call.respond(hashMapOf("data" to response))
             }
             post("/collections/{id}") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val collectionId = call.parameters["id"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
                 val updateCollectionRequest = call.receive<UpdateCollectionRequest>()
-                val response = collectionController.updateCollection(userId = userId, collectionId = collectionId, request = updateCollectionRequest)
+                val response = collectionController.updateCollection(tokenData = tokenData, collectionId = collectionId, request = updateCollectionRequest)
                 call.respond(hashMapOf("data" to response))
             }
             delete ("/collections/{id}") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val collectionId = call.parameters["id"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
-                collectionController.deleteCollection(userId = userId, collectionId = collectionId)
+                collectionController.deleteCollection(tokenData = tokenData, collectionId = collectionId)
                 call.respond(HttpStatusCode.OK)
             }
             get("/collections") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val gameId = call.request.queryParameters["gameId"]?.let {
                     it.toIntOrNull() ?: throw ItemBadRequest("can not convert gameId to Int")
                 } ?: throw BadRequest("missing gameId Parameter")
 
-                val response = collectionController.getCollections(userId = userId, gameId= gameId)
+                val response = collectionController.getCollections(tokenData = tokenData, gameId= gameId)
                 call.respond(hashMapOf("data" to response))
             }
             get("/collections/{id}") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val collectionId = call.parameters["id"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
-                val response = collectionController.getCollection(userId = userId, collectionId= collectionId)
+                val response = collectionController.getCollection(tokenData = tokenData, collectionId= collectionId)
                 call.respond(hashMapOf("data" to response))
             }
 
             //add new Group
             post("/collections/{collectionId}/new") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val collectionId = call.parameters["collectionId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
                 val newCollectionGroupRequest = call.receive<NewCollectionGroupRequest>()
-                val response = collectionController.addGroup(userId, collectionId, newCollectionGroupRequest)
+                val response = collectionController.addGroup(tokenData, collectionId, newCollectionGroupRequest)
                 call.respond(hashMapOf("data" to response))
             }
 
             post("/collections/{collectionId}/{groupId}") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val collectionId = call.parameters["collectionId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
                 val groupId = call.parameters["groupId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
                 val updateCollectionGroupRequest = call.receive<UpdateCollectionGroupRequest>()
-                val response = collectionController.updateGroup(userId, collectionId, groupId, updateCollectionGroupRequest)
+                val response = collectionController.updateGroup(tokenData, collectionId, groupId, updateCollectionGroupRequest)
                 call.respond(hashMapOf("data" to response))
             }
 
             delete("/collections/{collectionId}/{groupId}") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val collectionId = call.parameters["collectionId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
                 val groupId = call.parameters["groupId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
-                collectionController.deleteGroup(userId, collectionId, groupId)
+                collectionController.deleteGroup(tokenData, collectionId, groupId)
                 call.respond(HttpStatusCode.OK)
             }
 
             //add or update new Item amount
             post("/collections/{collectionId}/{groupId}/{itemId}") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val collectionId = call.parameters["collectionId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
                 val groupId = call.parameters["groupId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
                 val itemId = call.parameters["itemId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
                 val updateCollectionItemAmountRequest = call.receive<UpdateCollectionItemAmountRequest>()
-                val response = collectionController.updateItemAmount(userId, collectionId, groupId, itemId, updateCollectionItemAmountRequest)
+                val response = collectionController.updateItemAmount(tokenData, collectionId, groupId, itemId, updateCollectionItemAmountRequest)
                 call.respond(hashMapOf("data" to response))
             }
 
             delete("/collections/{collectionId}/{groupId}/{itemId}") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val collectionId = call.parameters["collectionId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
                 val groupId = call.parameters["groupId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
                 val itemId = call.parameters["itemId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
-                collectionController.deleteItemAmount(userId, collectionId, groupId, itemId)
+                collectionController.deleteItemAmount(tokenData, collectionId, groupId, itemId)
                 call.respond(HttpStatusCode.OK)
             }
-
         }
     }
 }
