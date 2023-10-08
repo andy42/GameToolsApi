@@ -16,7 +16,7 @@ class ImageController(
     private val userRepo: UserRepo
 ) : Controller {
 
-    suspend fun addNew(tokenData : TokenData, imageType : ImageType, description : String, data : ByteArray) : Int =
+    suspend fun addNew(tokenData : TokenData, imageType : ImageType, description : String, data : ByteArray) : ImageMetaData =
         accessTokenCallWithRole(userRepo, tokenData, listOf(User.Role.Admin)){
             if (userRepo.getUser(tokenData.userId)?.role != User.Role.Admin) throw AuthorizationException()
             return@accessTokenCallWithRole imageRepo.addNew(imageType, description, data)
@@ -27,7 +27,7 @@ class ImageController(
         return imageRepo.getImageFile(imageId)
     }
 
-    suspend fun getImages(tokenData : TokenData) : List<ImageMetaData> = accessTokenCall(tokenData) {
+    suspend fun getImages(tokenData : TokenData) : List<ImageMetaData> = accessTokenCall(userRepo, tokenData) {
         return@accessTokenCall imageRepo.getImages()
     }
 

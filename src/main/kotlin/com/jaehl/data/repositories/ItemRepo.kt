@@ -15,6 +15,8 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 interface ItemRepo {
+    suspend fun dropTables()
+    suspend fun createTables()
     suspend fun addNewItem(gameId : Int, name : String, imageId : Int, categories : List<Int>) : Item
     suspend fun updateItem(itemId : Int, request : UpdateItemRequest) : Item
     suspend fun getItem(itemId : Int) : Item
@@ -32,12 +34,20 @@ class ItemRepoImp(
 
     init {
         coroutineScope.launch {
-            database.dbQuery {
-                SchemaUtils.create(ItemTable)
-                SchemaUtils.create(CategorieTable)
-                SchemaUtils.create(ItemCategorieTable)
-            }
+            createTables()
         }
+    }
+
+    override suspend fun dropTables() = database.dbQuery {
+        SchemaUtils.drop(ItemCategorieTable)
+        SchemaUtils.drop(ItemTable)
+        SchemaUtils.drop(CategorieTable)
+    }
+
+    override suspend fun createTables() = database.dbQuery {
+        SchemaUtils.create(GameTable)
+        SchemaUtils.create(CategorieTable)
+        SchemaUtils.create(ItemCategorieTable)
     }
 
     private fun convertItemRow(itemEntity: ItemEntity) : Item {

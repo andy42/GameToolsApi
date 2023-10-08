@@ -24,7 +24,7 @@ class ItemController (
             return@accessTokenCallWithRole itemRepo.addCategory(newCategoryRequest.name)
     }
 
-    suspend fun getCategories(tokenData : TokenData) : List<ItemCategory> = accessTokenCall(tokenData) {
+    suspend fun getCategories(tokenData : TokenData) : List<ItemCategory> = accessTokenCall(userRepo, tokenData) {
         return@accessTokenCall itemRepo.getCategories()
     }
 
@@ -48,7 +48,7 @@ class ItemController (
             )
     }
 
-    suspend fun getItems(tokenData : TokenData, gameId : Int?) : List<Item> = accessTokenCall(tokenData) {
+    suspend fun getItems(tokenData : TokenData, gameId : Int?) : List<Item> = accessTokenCall(userRepo, tokenData) {
         if(gameId == null){
             return@accessTokenCall itemRepo.getItems()
         } else {
@@ -56,11 +56,11 @@ class ItemController (
         }
     }
 
-    suspend fun getItem(tokenData : TokenData, itemId : Int) : Item = accessTokenCall(tokenData) {
+    suspend fun getItem(tokenData : TokenData, itemId : Int) : Item = accessTokenCall(userRepo, tokenData) {
         return@accessTokenCall itemRepo.getItem(itemId)
     }
 
-    suspend fun deleteItem(tokenData : TokenData, itemId : Int) = accessTokenCall(tokenData) {
+    suspend fun deleteItem(tokenData : TokenData, itemId : Int) = accessTokenCall(userRepo, tokenData) {
         if (userRepo.getUser(tokenData.userId)?.role != User.Role.Admin) throw AuthorizationException()
         itemRepo.deleteItem(
             itemId = itemId

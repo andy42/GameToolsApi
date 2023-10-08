@@ -38,14 +38,15 @@ class AuthController(
     suspend fun userRefresh(tokenData : TokenData) : UserTokens {
         if(tokenData.tokenType != TokenType.RefreshToken) AuthorizationException()
         val user = userRepo.getUser(tokenData.userId) ?: throw AuthorizationException()
+        if(user.userName != tokenData.userName) throw AuthorizationException()
         return UserTokens(
             refreshToken = tokenManager.generateJWTToken(user, TokenType.RefreshToken),
             accessToken = tokenManager.generateJWTToken(user, TokenType.AccessToken)
         )
     }
 
-    suspend fun userMe(tokenData : TokenData) : UserSanitized = accessTokenCall(tokenData) {
-        return@accessTokenCall userRepo.getUser(tokenData.userId)?.toUserSanitized() ?: throw NotFound("user not found")
+    suspend fun userMe(tokenData : TokenData) : UserSanitized = accessTokenCall(userRepo, tokenData) { user ->
+        return@accessTokenCall user.toUserSanitized()
     }
 
     suspend fun users(tokenData : TokenData) : List<UserSanitized> = accessTokenCallWithRole(userRepo, tokenData, allowedRoles = listOf(User.Role.Admin)) {

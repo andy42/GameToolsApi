@@ -3,6 +3,7 @@ package com.jaehl.data.repositories
 import com.jaehl.data.auth.PasswordHashing
 import com.jaehl.data.database.Database
 import com.jaehl.data.local.ObjectListLoader
+import com.jaehl.data.model.EnvironmentConfig
 import com.jaehl.data.model.User
 import com.jaehl.models.UserCredentials
 import com.jaehl.models.requests.UserRegisterRequest
@@ -15,9 +16,13 @@ import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.select
 
 interface UserRepo {
+    suspend fun dropTables()
+    suspend fun createTables()
     suspend fun createUser(request : UserRegisterRequest) : User
+    suspend fun addUserFromBackup(user : User) : User
     suspend fun verifyAndGetUser(userCredentials: UserCredentials) : User?
     suspend fun getUser(userId : Int) : User?
     suspend fun getUsers() : List<User>
@@ -27,16 +32,36 @@ class UserRepoImp(
     private val userListLoader : ObjectListLoader<User>,
     private val database: Database,
     private val coroutineScope: CoroutineScope,
-    private val passwordHashing : PasswordHashing
+    private val passwordHashing : PasswordHashing,
+    private val environmentConfig: EnvironmentConfig
 ) : UserRepo {
 
     init {
         coroutineScope.launch {
-
             database.dbQuery {
                 SchemaUtils.create(UserTable)
+                addAdminAccount()
             }
         }
+    }
+
+    private fun addAdminAccount() {
+        if(UserTable.select { UserTable.userName eq environmentConfig.adminUserName }.empty()){
+            UserEntity.new {
+                userName = environmentConfig.adminUserName
+                email = environmentConfig.adminEmail
+                passwordHash = passwordHashing.hashPassword(environmentConfig.adminPassword)
+                role = User.Role.Admin.value
+            }
+        }
+    }
+
+    override suspend fun dropTables() = database.dbQuery {
+        SchemaUtils.drop(UserTable)
+    }
+
+    override suspend fun createTables() = database.dbQuery {
+        SchemaUtils.create(UserTable)
     }
 
     override suspend fun createUser(request : UserRegisterRequest): User = database.dbQuery {
@@ -45,6 +70,15 @@ class UserRepoImp(
             email = request.email
             passwordHash = passwordHashing.hashPassword(request.password)
             role = User.Role.User.value
+        }.toUser()
+    }
+
+    override suspend fun addUserFromBackup(user: User): User = database.dbQuery {
+        return@dbQuery UserEntity.new {
+            userName = user.userName
+            email = user.email
+            passwordHash = user.passwordHash
+            role = user.role.value
         }.toUser()
     }
 

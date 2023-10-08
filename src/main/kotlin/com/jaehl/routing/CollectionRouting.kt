@@ -20,7 +20,8 @@ import io.ktor.server.routing.*
 
 fun Application.collectionRouting(collectionRepo: CollectionRepo, tokenManager : TokenManager, userRepo: UserRepo) {
     val collectionController = CollectionController(
-        collectionRepo = collectionRepo
+        collectionRepo = collectionRepo,
+        userRepo = userRepo
     )
     routing {
         authenticate("auth-jwt") {
@@ -29,6 +30,13 @@ fun Application.collectionRouting(collectionRepo: CollectionRepo, tokenManager :
                 val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val newCollectionRequest = call.receive<NewCollectionRequest>()
                 val response = collectionController.addCollection(tokenData, newCollectionRequest)
+                call.respond(hashMapOf("data" to response))
+            }
+            post("/admin/collections/new") {
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                val newAdminCollectionRequest = call.receive<NewAdminCollectionRequest>()
+                val response = collectionController.addAdminCollection(tokenData, newAdminCollectionRequest)
                 call.respond(hashMapOf("data" to response))
             }
             post("/collections/{id}") {
@@ -51,7 +59,7 @@ fun Application.collectionRouting(collectionRepo: CollectionRepo, tokenManager :
                 val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val gameId = call.request.queryParameters["gameId"]?.let {
                     it.toIntOrNull() ?: throw ItemBadRequest("can not convert gameId to Int")
-                } ?: throw BadRequest("missing gameId Parameter")
+                }
 
                 val response = collectionController.getCollections(tokenData = tokenData, gameId= gameId)
                 call.respond(hashMapOf("data" to response))

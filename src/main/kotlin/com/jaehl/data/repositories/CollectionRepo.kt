@@ -14,9 +14,12 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 interface CollectionRepo {
+    suspend fun dropTables()
+    suspend fun createTables()
     suspend fun addCollection(userId : Int, request : NewCollectionRequest) : Collection
     suspend fun updateCollection(collectionId : Int, request : UpdateCollectionRequest) : Collection
     suspend fun deleteCollection(collectionId : Int)
+    suspend fun getCollections() : List<Collection>
     suspend fun getCollections(userId : Int, gameId : Int) : List<Collection>
     suspend fun getCollection(collectionId: Int) : Collection
     suspend fun addGroup(collectionId : Int, request : NewCollectionGroupRequest) : Collection.Group
@@ -35,12 +38,20 @@ class CollectionRepoImp(
 
     init {
         coroutineScope.launch {
-            database.dbQuery {
-                SchemaUtils.create(CollectionTable)
-                SchemaUtils.create(CollectionGroupTable)
-                SchemaUtils.create(CollectionItemAmountTable)
-            }
+            createTables()
         }
+    }
+
+    override suspend fun dropTables() = database.dbQuery {
+        SchemaUtils.drop(CollectionItemAmountTable)
+        SchemaUtils.drop(CollectionGroupTable)
+        SchemaUtils.drop(CollectionTable)
+    }
+
+    override suspend fun createTables() = database.dbQuery {
+        SchemaUtils.create(CollectionTable)
+        SchemaUtils.create(CollectionGroupTable)
+        SchemaUtils.create(CollectionItemAmountTable)
     }
 
     override suspend fun addCollection(userId : Int, request: NewCollectionRequest) : Collection = database.dbQuery {
@@ -122,6 +133,10 @@ class CollectionRepoImp(
             groupModel.delete()
         }
         collectionEntity.delete()
+    }
+
+    override suspend fun getCollections() : List<Collection> = database.dbQuery {
+        return@dbQuery CollectionEntity.all().map { it.toCollection() }
     }
 
     override suspend fun getCollections(userId: Int, gameId: Int) : List<Collection> = database.dbQuery {

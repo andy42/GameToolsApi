@@ -1,6 +1,7 @@
 package com.jaehl
 
 import com.google.gson.reflect.TypeToken
+import com.jaehl.controllers.BackupController
 import com.jaehl.data.auth.PasswordHashingImp
 import com.jaehl.data.auth.TokenManagerImp
 import com.jaehl.data.database.Database
@@ -38,9 +39,14 @@ fun Application.module() {
         jdbcDatabaseUrl = environment.config.property("database.databaseUrl").getString(),
         databaseUsername = environment.config.property("database.userName").getString(),
         databasePassword = environment.config.property("database.password").getString(),
+        databaseName = environment.config.property("database.name").getString(),
 
         userHomeDirectory = "gameToolsApi",
-        debug = true
+        debug = true,
+
+        adminUserName = environment.config.property("admin.userName").getString(),
+        adminEmail = environment.config.property("admin.email").getString(),
+        adminPassword = environment.config.property("admin.password").getString(),
     )
 
     val database = Database(environmentConfig)
@@ -58,7 +64,8 @@ fun Application.module() {
         userListLoader = ObjectListJsonLoader<User>(object : TypeToken<Array<User>>() {}.type),
         database = database,
         coroutineScope = this,
-        passwordHashing = PasswordHashingImp()
+        passwordHashing = PasswordHashingImp(),
+        environmentConfig = environmentConfig
     )
 
     val imageRepo = ImageRepoImp(
@@ -80,6 +87,21 @@ fun Application.module() {
     val collectionRepo = CollectionRepoImp(
         database = database,
         coroutineScope = this
+    )
+
+    val backupRepo = BackupRepoImp(
+        environmentConfig
+    )
+
+    val backupController = BackupController(
+        environmentConfig,
+        userRepo,
+        gameRepo,
+        imageRepo,
+        itemRepo,
+        recipeRepo,
+        collectionRepo,
+        backupRepo
     )
 
     install(Authentication) {
@@ -128,6 +150,7 @@ fun Application.module() {
         imageRepo,
         itemRepo,
         recipeRepo,
-        collectionRepo
+        collectionRepo,
+        backupController
     )
 }

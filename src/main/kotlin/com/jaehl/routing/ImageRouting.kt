@@ -2,6 +2,7 @@ package com.jaehl.routing
 
 import com.jaehl.controllers.ImageController
 import com.jaehl.data.auth.TokenManager
+import com.jaehl.data.model.ImageMetaData
 import com.jaehl.data.repositories.ImageRepo
 import com.jaehl.data.repositories.UserRepo
 import com.jaehl.models.ImageType
@@ -29,7 +30,7 @@ fun Application.imageRouting(imageRepo: ImageRepo, tokenManager : TokenManager, 
             post("/images/new") {
                 val jwtPrincipal = call.principal<JWTPrincipal>()
                 val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
-                var imageId = -1
+                var imageMetaData = ImageMetaData(id = -1, description = "", imageType = ImageType.NotSupported.value)
                 var description = ""
                 var imageType = ImageType.NotSupported
                 var data : ByteArray? = null
@@ -54,14 +55,14 @@ fun Application.imageRouting(imageRepo: ImageRepo, tokenManager : TokenManager, 
                     part.dispose()
                 }
 
-                if(data == null) throw ImageDataNotFound(imageId)
+                if(data == null) throw ImageDataNotFound(imageMetaData.id)
                 if(imageType == ImageType.NotSupported) throw BadRequest("missing imageType")
                 data?.let { data ->
-                    imageId = imageController.addNew(tokenData, imageType, description, data)
+                    imageMetaData = imageController.addNew(tokenData, imageType, description, data)
                 }
 
                 call.respond(
-                    hashMapOf("data" to hashMapOf( "imageId" to imageId)))
+                    hashMapOf("data" to imageMetaData))
             }
 
             get ("/images/{id}") {

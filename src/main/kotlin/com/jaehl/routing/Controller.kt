@@ -7,13 +7,16 @@ import com.jaehl.data.repositories.UserRepo
 import com.jaehl.statuspages.AuthorizationException
 
 interface Controller {
-    suspend fun <T>accessTokenCall(tokenData: TokenData, block : suspend () -> T ) : T {
+    suspend fun <T>accessTokenCall(userRepo: UserRepo, tokenData: TokenData, block : suspend (user : User) -> T ) : T {
+        val user = userRepo.getUser(tokenData.userId) ?: throw AuthorizationException()
+        if(user.userName != tokenData.userName) throw AuthorizationException()
         if(tokenData.tokenType != TokenType.AccessToken) throw AuthorizationException()
-        return  block.invoke()
+        return  block.invoke(user)
     }
 
     suspend fun <T>accessTokenCallWithRole(userRepo: UserRepo, tokenData: TokenData, allowedRoles : List<User.Role>, block : suspend (user : User) -> T ) : T {
         val user = userRepo.getUser(tokenData.userId) ?: throw AuthorizationException()
+        if(user.userName != tokenData.userName) throw AuthorizationException()
         if(!allowedRoles.contains(user.role)) throw AuthorizationException()
         if(tokenData.tokenType != TokenType.AccessToken) throw AuthorizationException()
         return  block.invoke(user)

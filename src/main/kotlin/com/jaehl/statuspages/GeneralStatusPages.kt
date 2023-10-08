@@ -15,6 +15,15 @@ fun StatusPagesConfig.generalStatusPages() {
             )
         )
     }
+    exception<ServerError> { call, cause ->
+        call.respond(
+            status = HttpStatusCode.InternalServerError,
+            ErrorResponse(
+                code = HttpStatusCode.InternalServerError.value,
+                message = cause.message ?: ""
+            )
+        )
+    }
     exception<BadRequest> { call, cause ->
         call.respond(
             status = HttpStatusCode.BadRequest,
@@ -44,6 +53,7 @@ fun StatusPagesConfig.generalStatusPages() {
     }
 }
 
+class ServerError(override val message: String? = "ServerError"): Throwable()
 class AuthorizationException(override val message: String? = "user not Authorized for this request") : Throwable()
 class BadRequest(override val message: String? = "BadRequest") : Throwable()
 class NotFound(override val message: String? = "NotFound") : Throwable()

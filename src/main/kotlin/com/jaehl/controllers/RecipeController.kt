@@ -36,11 +36,11 @@ class RecipeController(
             recipeRepo.deleteRecipe(recipeId)
     }
 
-    suspend fun getRecipes(tokenData : TokenData, gameId : Int?) : List<Recipe> = accessTokenCall(tokenData) {
+    suspend fun getRecipes(tokenData : TokenData, gameId : Int?) : List<Recipe> = accessTokenCall(userRepo, tokenData) {
         return@accessTokenCall recipeRepo.getRecipes(gameId)
     }
 
-    suspend fun getRecipe(tokenData : TokenData, recipeId : Int) : Recipe = accessTokenCall(tokenData) {
+    suspend fun getRecipe(tokenData : TokenData, recipeId : Int) : Recipe = accessTokenCall(userRepo, tokenData) {
         return@accessTokenCall recipeRepo.getRecipe(recipeId)
     }
 }

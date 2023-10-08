@@ -18,6 +18,7 @@ interface TokenManager {
     fun createJWTVerifier() : JWTVerifier
     fun getUserId(principle : JWTPrincipal?) : Int?
     fun getTokenType(principle: JWTPrincipal?): TokenType?
+    fun getUserName(principle: JWTPrincipal?): String?
     fun validateForTokenType(principle: JWTPrincipal?, tokenType : TokenType) : Boolean
     fun getTokenData(principle: JWTPrincipal?) : TokenData?
 }
@@ -29,7 +30,7 @@ class TokenManagerImp(
 
     private fun generateExpireDate(tokenType : TokenType) : Long {
         return System.currentTimeMillis() + when (tokenType) {
-            TokenType.AccessToken -> 5.minutes.toLong(DurationUnit.MILLISECONDS)
+            TokenType.AccessToken -> 1.hours.toLong(DurationUnit.MILLISECONDS)
             TokenType.RefreshToken -> 180.days.toLong(DurationUnit.MILLISECONDS)
         }
     }
@@ -39,6 +40,7 @@ class TokenManagerImp(
             .withAudience(environmentConfig.jwtAudience)
             .withIssuer(environmentConfig.jwtIssuer)
             .withClaim(userIdKey, user.id)
+            .withClaim(userNameKey, user.userName)
             .withClaim(tokenTypekey, tokenType.value)
             .withExpiresAt(Date(generateExpireDate(tokenType)))
             .sign(Algorithm.HMAC256(environmentConfig.jwtSecret))
@@ -56,6 +58,10 @@ class TokenManagerImp(
         return principle?.payload?.getClaim(userIdKey)?.asInt()
     }
 
+    override fun getUserName(principle: JWTPrincipal?): String? {
+        return principle?.payload?.getClaim(userNameKey)?.asString()
+    }
+
     override fun getTokenType(principle: JWTPrincipal?): TokenType? {
         return TokenType.from(principle?.payload?.getClaim(tokenTypekey)?.asString() ?: "")
     }
@@ -64,6 +70,7 @@ class TokenManagerImp(
 
         return TokenData(
             userId = getUserId(principle) ?: return null,
+            userName = getUserName(principle) ?: return null,
             tokenType = getTokenType(principle) ?: return null
         )
     }
@@ -74,6 +81,7 @@ class TokenManagerImp(
 
     companion object {
         val userIdKey = "userid"
+        val userNameKey = "userName"
         val tokenTypekey = "tokenType"
     }
 }

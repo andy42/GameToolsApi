@@ -41,11 +41,11 @@ class GameController(
             )
     }
 
-    suspend fun getGame(tokenData : TokenData ,gameId : Int) : Game = accessTokenCall(tokenData){
+    suspend fun getGame(tokenData : TokenData ,gameId : Int) : Game = accessTokenCall(userRepo, tokenData){
         return@accessTokenCall gameRepo.getGame(gameId) ?: throw GameIdNotfound(gameId)
     }
 
-    suspend fun getAllGames(tokenData : TokenData) : List<Game> = accessTokenCall(tokenData){
+    suspend fun getAllGames(tokenData : TokenData) : List<Game> = accessTokenCall(userRepo, tokenData){
         return@accessTokenCall gameRepo.getGames()
     }
 }
