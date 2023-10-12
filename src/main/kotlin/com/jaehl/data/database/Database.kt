@@ -18,7 +18,7 @@ class Database(
         val dataSource = PGSimpleDataSource().apply {
             user = environmentConfig.databaseUsername
             password = environmentConfig.databasePassword
-            databaseName = "game_tools"
+            databaseName = environmentConfig.databaseName
         }
 
         databaseHandel = Database.connect(dataSource)

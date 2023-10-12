@@ -29,34 +29,41 @@ fun Application.recipeRouting(recipeRepo: RecipeRepo ,itemRepo : ItemRepo, gameR
         authenticate("auth-jwt") {
 
             post("/recipes/new") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val newRecipeRequest = call.receive<NewRecipeRequest>()
-                val response = recipeController.addRecipe(userId, newRecipeRequest)
+                val response = recipeController.addRecipe(tokenData, newRecipeRequest)
                 call.respond(hashMapOf("data" to response))
             }
             post("/recipes/{id}") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val recipeId = call.parameters["id"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
                 val updateRecipeRequest = call.receive<UpdateRecipeRequest>()
-                val response = recipeController.updateRecipe(userId, recipeId, updateRecipeRequest)
+                val response = recipeController.updateRecipe(tokenData, recipeId, updateRecipeRequest)
                 call.respond(hashMapOf("data" to response))
             }
             delete("/recipes/{id}") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val recipeId = call.parameters["id"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
-                recipeController.deleteRecipe(userId, recipeId)
+                recipeController.deleteRecipe(tokenData, recipeId)
                 call.respond(HttpStatusCode.OK)
             }
             get("/recipes") {
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val gameId = call.request.queryParameters["gameId"]?.let {
                     it.toIntOrNull() ?: throw ItemBadRequest("can not convert gameId to Int")
                 }
-                val response = recipeController.getRecipes(gameId)
+                val response = recipeController.getRecipes(tokenData, gameId)
                 call.respond(hashMapOf("data" to response))
             }
             get("/recipes/{id}") {
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val id = call.parameters["id"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
-                val response = recipeController.getRecipe(recipeId = id)
+                val response = recipeController.getRecipe(tokenData, recipeId = id)
                 call.respond(hashMapOf("data" to response))
             }
         }

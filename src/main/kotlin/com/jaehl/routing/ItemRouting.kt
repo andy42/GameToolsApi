@@ -8,6 +8,7 @@ import com.jaehl.data.repositories.GameRepo
 import com.jaehl.data.repositories.ItemRepo
 import com.jaehl.data.repositories.UserRepo
 import com.jaehl.models.requests.UpdateItemRequest
+import com.jaehl.statuspages.BadRequest
 import com.jaehl.statuspages.ItemBadRequest
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -27,47 +28,57 @@ fun Application.itemRouting(itemRepo : ItemRepo, gameRepo: GameRepo, tokenManage
         authenticate("auth-jwt") {
 
             post("/items/Categories/new") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val newCategoryRequest = call.receive<NewCategoryRequest>()
-                val response = itemController.addCategory(userId, newCategoryRequest)
+                val response = itemController.addCategory(tokenData, newCategoryRequest)
                 call.respond(hashMapOf("data" to response))
             }
 
             get("/items/Categories") {
-                val response = itemController.getCategories()
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                val response = itemController.getCategories(tokenData)
                 call.respond(hashMapOf("data" to response))
             }
             post("/items/new") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val newItemRequest = call.receive<NewItemRequest>()
-                val response = itemController.addItem(userId, newItemRequest)
+                val response = itemController.addItem(tokenData, newItemRequest)
                 call.respond(hashMapOf("data" to response))
             }
 
             post("/items/{id}") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val itemId = call.parameters["id"]?.toIntOrNull() ?: throw ItemBadRequest("can not convert id to Int")
                 val updateItemRequest = call.receive<UpdateItemRequest>()
-                val response = itemController.updateItem(userId, itemId, updateItemRequest)
+                val response = itemController.updateItem(tokenData, itemId, updateItemRequest)
                 call.respond(hashMapOf("data" to response))
             }
 
             get("/items") {
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val gameId = call.request.queryParameters["gameId"]?.let {
                     it.toIntOrNull() ?: throw ItemBadRequest("can not convert gameId to Int")
                 }
-                val response = itemController.getItems(gameId)
+                val response = itemController.getItems(tokenData, gameId)
                 call.respond(hashMapOf("data" to response))
             }
             get("/items/{id}") {
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val id = call.parameters["id"]?.toIntOrNull() ?: throw ItemBadRequest("can not convert id to Int")
-                val response = itemController.getItem(itemId = id)
+                val response = itemController.getItem(tokenData = tokenData, itemId = id)
                 call.respond(hashMapOf("data" to response))
             }
             delete("/items/{id}") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val id = call.parameters["id"]?.toIntOrNull() ?: throw ItemBadRequest("can not convert id to Int")
-                itemController.deleteItem(userId = userId, itemId = id)
+                itemController.deleteItem(tokenData = tokenData, itemId = id)
                 call.respond(HttpStatusCode.OK)
             }
         }

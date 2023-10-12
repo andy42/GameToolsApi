@@ -19,7 +19,9 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import java.io.FileOutputStream
 
 interface ImageRepo {
-    suspend fun addNew(imageType: ImageType, description : String, data : ByteArray) : Int
+    suspend fun dropTables()
+    suspend fun createTables()
+    suspend fun addNew(imageType: ImageType, description : String, data : ByteArray) : ImageMetaData
     suspend fun getImagePath(imageId : Int) : String?
     suspend fun getImageFile(imageId : Int) : ImageData
     suspend fun updateImage(imageId : Int, data : ByteArray)
@@ -41,7 +43,15 @@ class ImageRepoImp(
         }
     }
 
-    override suspend fun addNew(imageType: ImageType, description : String, data: ByteArray): Int = database.dbQuery {
+    override suspend fun dropTables() = database.dbQuery {
+        SchemaUtils.drop(ImageTable)
+    }
+
+    override suspend fun createTables() = database.dbQuery {
+        SchemaUtils.create(ImageTable)
+    }
+
+    override suspend fun addNew(imageType: ImageType, description : String, data: ByteArray): ImageMetaData = database.dbQuery {
 
         val imageId = ImageTable.insertAndGetId {
             it[ImageTable.description] = description
@@ -50,7 +60,7 @@ class ImageRepoImp(
         }
 
         val imageFileName = "${imageId}.${imageType.fileExtension}"
-        val imageFile = LocalFiles.getFile(environmentConfig.userHomeDirectory, imageFileName)
+        val imageFile = LocalFiles.getFile("${environmentConfig.getWorkingDirectory()}", imageFileName)
         val outputStream = FileOutputStream(imageFile)
         outputStream.write(data)
         outputStream.close()
@@ -58,7 +68,11 @@ class ImageRepoImp(
         val imageEntity = ImageEntity.findById(imageId) ?: throw  ImageIdNotfound(imageId.value)
         imageEntity.path = imageFileName
 
-        return@dbQuery imageId.value
+        return@dbQuery ImageMetaData(
+            id = imageEntity.id.value,
+            description = imageEntity.description,
+            imageType = imageEntity.imageType
+        )
     }
 
     override suspend fun getImagePath(imageId: Int): String? = database.dbQuery {
@@ -70,7 +84,7 @@ class ImageRepoImp(
         val imageEntity = ImageEntity.findById(imageId) ?: throw ImageIdNotfound(imageId)
         return@dbQuery ImageData(
             id = imageEntity.id.value,
-            file = LocalFiles.getFile(environmentConfig.userHomeDirectory, imageEntity.path),
+            file = LocalFiles.getFile("${environmentConfig.getWorkingDirectory()}", imageEntity.path),
             description = imageEntity.description,
             imageType = ImageType.from(imageEntity.imageType)
         )
@@ -92,7 +106,7 @@ class ImageRepoImp(
 
     override suspend fun deleteImage(imageId: Int) = database.dbQuery {
         val imageEntity = ImageEntity.findById(imageId) ?: throw  ImageIdNotfound(imageId)
-        val imageFile = LocalFiles.getFile(environmentConfig.userHomeDirectory, imageEntity.path)
+        val imageFile = LocalFiles.getFile("${environmentConfig.getWorkingDirectory()}", imageEntity.path)
         if(imageFile.exists()){
             imageFile.delete()
         }

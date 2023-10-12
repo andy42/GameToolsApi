@@ -1,5 +1,6 @@
 package com.jaehl.plugins
 
+import com.jaehl.controllers.BackupController
 import com.jaehl.data.auth.TokenManager
 import com.jaehl.data.repositories.*
 import com.jaehl.routing.*
@@ -14,7 +15,8 @@ fun Application.configureRouting(
     imageRepo : ImageRepo,
     itemRepo : ItemRepo,
     recipeRepo : RecipeRepo,
-    collectionRepo: CollectionRepo
+    collectionRepo: CollectionRepo,
+    backupController : BackupController
 ) {
 
     routing {
@@ -29,4 +31,5 @@ fun Application.configureRouting(
     itemRouting(itemRepo, gameRepo, tokenManager, userRepo)
     recipeRouting(recipeRepo, itemRepo, gameRepo, tokenManager, userRepo)
     collectionRouting(collectionRepo, tokenManager, userRepo)
+    backupRoutingRouting(tokenManager, backupController)
 }

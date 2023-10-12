@@ -2,6 +2,8 @@ package com.jaehl.repositories
 
 import com.jaehl.data.model.Game
 import com.jaehl.data.repositories.GameRepo
+import com.jaehl.models.requests.NewGameRequest
+import com.jaehl.models.requests.UpdateGameRequest
 import com.jaehl.statuspages.GameIdNotfound
 
 class GameRepoMock : GameRepo {
@@ -14,10 +16,12 @@ class GameRepoMock : GameRepo {
         lastIndex = 0
     }
 
-    override suspend fun addNew(name: String): Game? {
+    override suspend fun addNew(request : NewGameRequest): Game? {
         val newGame = Game(
             id = lastIndex++,
-            name = name
+            name = request.name,
+            icon = request.icon,
+            banner = request.banner
         )
         gamesMap[newGame.id] = newGame
         return newGame
@@ -31,10 +35,12 @@ class GameRepoMock : GameRepo {
         return gamesMap.values.toList()
     }
 
-    override suspend fun updateGame(gameId: Int, name: String): Game? {
+    override suspend fun updateGame(gameId: Int, request : UpdateGameRequest): Game? {
         var updatedGame = gamesMap[gameId] ?: throw GameIdNotfound(gameId)
         updatedGame = updatedGame.copy(
-            name = name
+            name = request.name,
+            icon = request.icon,
+            banner = request.banner
         )
 
         gamesMap[gameId] = updatedGame

@@ -24,6 +24,8 @@ import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.deleteWhere
 
 interface RecipeRepo {
+    suspend fun dropTables()
+    suspend fun createTables()
     suspend fun addRecipe(request : NewRecipeRequest) : Recipe
     suspend fun updateRecipe(recipeId : Int, request : UpdateRecipeRequest) : Recipe
     suspend fun deleteRecipe(recipeId : Int)
@@ -38,19 +40,22 @@ class RecipeRepoImp(
 
     init {
         coroutineScope.launch {
-            database.dbQuery {
-
-//                SchemaUtils.drop(RecipeCraftedAtTable)
-//                SchemaUtils.drop(RecipeInputTable)
-//                SchemaUtils.drop(RecipeOutputTable)
-//                SchemaUtils.drop(RecipeTable)
-
-                SchemaUtils.create(RecipeTable)
-                SchemaUtils.create(RecipeCraftedAtTable)
-                SchemaUtils.create(RecipeInputTable)
-                SchemaUtils.create(RecipeOutputTable)
-            }
+            createTables()
         }
+    }
+
+    override suspend fun dropTables() = database.dbQuery {
+        SchemaUtils.drop(RecipeOutputTable)
+        SchemaUtils.drop(RecipeInputTable)
+        SchemaUtils.drop(RecipeCraftedAtTable)
+        SchemaUtils.drop(RecipeTable)
+    }
+
+    override suspend fun createTables() = database.dbQuery {
+        SchemaUtils.create(RecipeTable)
+        SchemaUtils.create(RecipeCraftedAtTable)
+        SchemaUtils.create(RecipeInputTable)
+        SchemaUtils.create(RecipeOutputTable)
     }
 
     private fun updateRecipeInputs(recipeEntity : RecipeEntity, inputs : List<RecipeAmountRequest>) {

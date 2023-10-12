@@ -15,7 +15,9 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 
 interface GameRepo {
-    suspend fun addNew(request : NewGameRequest) : Game?
+    suspend fun dropTables()
+    suspend fun createTables()
+    suspend fun addNew(request : NewGameRequest) : Game
     suspend fun getGame(gameId : Int) : Game?
     suspend fun getGames() : List<Game>
     suspend fun updateGame(id : Int, request : UpdateGameRequest) : Game?
@@ -29,10 +31,16 @@ class GameRepoImp(
 
     init {
         coroutineScope.launch {
-            database.dbQuery {
-                SchemaUtils.create(GameTable)
-            }
+            createTables()
         }
+    }
+
+    override suspend fun dropTables() = database.dbQuery {
+        SchemaUtils.drop(GameTable)
+    }
+
+    override suspend fun createTables() = database.dbQuery {
+        SchemaUtils.create(GameTable)
     }
 
     override suspend fun addNew(request : NewGameRequest) = database.dbQuery {

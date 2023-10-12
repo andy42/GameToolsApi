@@ -2,6 +2,7 @@ package com.jaehl.routing
 
 import com.jaehl.controllers.ImageController
 import com.jaehl.data.auth.TokenManager
+import com.jaehl.data.model.ImageMetaData
 import com.jaehl.data.repositories.ImageRepo
 import com.jaehl.data.repositories.UserRepo
 import com.jaehl.models.ImageType
@@ -27,8 +28,9 @@ fun Application.imageRouting(imageRepo: ImageRepo, tokenManager : TokenManager, 
     routing {
         authenticate("auth-jwt") {
             post("/images/new") {
-                val userId = tokenManager.getUserId(call.principal<JWTPrincipal>())
-                var imageId = -1
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                var imageMetaData = ImageMetaData(id = -1, description = "", imageType = ImageType.NotSupported.value)
                 var description = ""
                 var imageType = ImageType.NotSupported
                 var data : ByteArray? = null
@@ -53,24 +55,28 @@ fun Application.imageRouting(imageRepo: ImageRepo, tokenManager : TokenManager, 
                     part.dispose()
                 }
 
-                if(data == null) throw ImageDataNotFound(imageId)
+                if(data == null) throw ImageDataNotFound(imageMetaData.id)
                 if(imageType == ImageType.NotSupported) throw BadRequest("missing imageType")
                 data?.let { data ->
-                    imageId = imageController.addNew(userId, imageType, description, data)
+                    imageMetaData = imageController.addNew(tokenData, imageType, description, data)
                 }
 
                 call.respond(
-                    hashMapOf("data" to hashMapOf( "imageId" to imageId)))
+                    hashMapOf("data" to imageMetaData))
             }
 
             get ("/images/{id}") {
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val id = call.parameters["id"]?.toInt() ?: throw ImageIdBadRequest()
-                val imageData = imageController.getImageData(id)
+                val imageData = imageController.getImageData(tokenData, id)
                 call.respondBytes(imageData.file.readBytes(), imageTypeToContentType(imageData.imageType))
             }
 
             get ("/images") {
-                val images = imageController.getImages()
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                val images = imageController.getImages(tokenData)
                 call.respond(
                     hashMapOf("data" to images))
             }

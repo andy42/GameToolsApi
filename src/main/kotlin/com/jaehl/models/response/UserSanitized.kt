@@ -10,12 +10,3 @@ data class UserSanitized(
     val email : String,
     val role : User.Role
 )
-
-fun User.toUserSanitized() : UserSanitized {
-    return UserSanitized(
-        id = this.id,
-        userName = this.userName,
-        email = this.userName,
-        role = this.role
-    )
-}
