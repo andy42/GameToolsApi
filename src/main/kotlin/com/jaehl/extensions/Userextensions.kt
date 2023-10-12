@@ -7,7 +7,7 @@ fun User.toUserSanitized() : UserSanitized {
     return UserSanitized(
         id = this.id,
         userName = this.userName,
-        email = this.userName,
+        email = this.email,
         role = this.role
     )
 }

@@ -6,7 +6,6 @@ import com.jaehl.data.model.User
 import com.jaehl.data.repositories.CollectionRepo
 import com.jaehl.data.repositories.UserRepo
 import com.jaehl.models.requests.*
-import com.jaehl.routing.Controller
 import com.jaehl.statuspages.AuthorizationException
 
 class CollectionController(
@@ -35,10 +34,9 @@ class CollectionController(
         collectionRepo.deleteCollection( collectionId)
     }
 
-    suspend fun getCollections(tokenData : TokenData, gameId : Int?) : List<Collection> = accessTokenCall(userRepo, tokenData) {
+    suspend fun getCollections(tokenData : TokenData, gameId : Int?) : List<Collection> = accessTokenCall(userRepo, tokenData) { user ->
         if(gameId == null){
-            val user = userRepo.getUser(tokenData.userId) ?: throw AuthorizationException()
-            if(user.role != User.Role.Admin) throw AuthorizationException()
+            if(user.role != User.Role.Admin ) throw AuthorizationException()
             return@accessTokenCall collectionRepo.getCollections()
         }
         else {

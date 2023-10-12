@@ -9,7 +9,6 @@ import com.jaehl.data.repositories.UserRepo
 import com.jaehl.data.model.User
 import com.jaehl.models.requests.NewRecipeRequest
 import com.jaehl.models.requests.UpdateRecipeRequest
-import com.jaehl.routing.Controller
 import com.jaehl.statuspages.AuthorizationException
 
 class RecipeController(

@@ -7,7 +7,6 @@ import com.jaehl.models.requests.UpdateGameRequest
 import com.jaehl.data.model.Game
 import com.jaehl.data.model.TokenData
 import com.jaehl.data.repositories.UserRepo
-import com.jaehl.routing.Controller
 import com.jaehl.statuspages.AuthorizationException
 import com.jaehl.statuspages.GameIdNotfound
 import com.jaehl.statuspages.GameNotAddedException
@@ -16,7 +15,7 @@ import com.jaehl.statuspages.GameNotUpdatedException
 class GameController(
     private val gameRepo: GameRepo,
     private val userRepo: UserRepo
-) : Controller  {
+) : Controller {
     suspend fun addNewGame(tokenData : TokenData, newGameRequest : NewGameRequest) : Game =
         accessTokenCallWithRole(userRepo, tokenData, allowedRoles = listOf(User.Role.Admin)) {
             if (userRepo.getUser(tokenData.userId)?.role != User.Role.Admin) throw AuthorizationException()

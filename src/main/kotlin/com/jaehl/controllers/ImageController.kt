@@ -8,7 +8,6 @@ import com.jaehl.data.repositories.ImageRepo
 import com.jaehl.data.repositories.UserRepo
 import com.jaehl.models.ImageData
 import com.jaehl.models.ImageType
-import com.jaehl.routing.Controller
 import com.jaehl.statuspages.AuthorizationException
 
 class ImageController(

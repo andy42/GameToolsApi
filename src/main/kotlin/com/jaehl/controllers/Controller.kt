@@ -1,4 +1,4 @@
-package com.jaehl.routing
+package com.jaehl.controllers
 
 import com.jaehl.data.auth.TokenType
 import com.jaehl.data.model.TokenData
@@ -10,6 +10,7 @@ interface Controller {
     suspend fun <T>accessTokenCall(userRepo: UserRepo, tokenData: TokenData, block : suspend (user : User) -> T ) : T {
         val user = userRepo.getUser(tokenData.userId) ?: throw AuthorizationException()
         if(user.userName != tokenData.userName) throw AuthorizationException()
+        if (user.role == User.Role.Unverified) throw AuthorizationException()
         if(tokenData.tokenType != TokenType.AccessToken) throw AuthorizationException()
         return  block.invoke(user)
     }

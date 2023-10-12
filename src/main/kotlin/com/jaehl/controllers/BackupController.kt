@@ -7,7 +7,6 @@ import com.jaehl.models.requests.NewCollectionRequest
 import com.jaehl.models.requests.NewGameRequest
 import com.jaehl.models.requests.NewRecipeRequest
 import com.jaehl.models.requests.RecipeAmountRequest
-import com.jaehl.routing.Controller
 import com.jaehl.statuspages.ServerError
 
 class BackupController(

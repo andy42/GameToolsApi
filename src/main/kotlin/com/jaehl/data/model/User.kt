@@ -14,7 +14,8 @@ data class User(
     enum class Role (val value : String){
         Admin("Admin"),
         Contributor("Contributor"),
-        User("User");
+        User("User"),
+        Unverified("Unverified");
 
         companion object {
             fun createByName(value: String): Role? {

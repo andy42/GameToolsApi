@@ -3,7 +3,9 @@ package com.jaehl.routing
 import com.jaehl.controllers.AuthController
 import com.jaehl.data.auth.TokenManager
 import com.jaehl.data.repositories.UserRepo
+import com.jaehl.extensions.toUserSanitized
 import com.jaehl.models.UserCredentials
+import com.jaehl.models.requests.UserChangeRoleRequest
 import com.jaehl.models.requests.UserRegisterRequest
 import com.jaehl.models.response.DataResponse
 import com.jaehl.statuspages.BadRequest
@@ -52,6 +54,14 @@ fun Application.authenticationRouting(userRepo : UserRepo, tokenManager : TokenM
                 val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
                 val users = authController.users(tokenData)
                 call.respond(DataResponse(users))
+            }
+
+            post("/user/changeRole") {
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                val userChangeRoleRequest = call.receive<UserChangeRoleRequest>()
+                val user = authController.changeUserRole(tokenData, userChangeRoleRequest)
+                call.respond(DataResponse(user.toUserSanitized()))
             }
         }
     }

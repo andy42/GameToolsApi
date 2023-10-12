@@ -8,11 +8,10 @@ import com.jaehl.data.model.User
 import com.jaehl.models.UserCredentials
 import com.jaehl.data.repositories.UserRepo
 import com.jaehl.extensions.toUserSanitized
+import com.jaehl.models.requests.UserChangeRoleRequest
 import com.jaehl.models.requests.UserRegisterRequest
 import com.jaehl.models.response.UserSanitized
-import com.jaehl.routing.Controller
 import com.jaehl.statuspages.AuthorizationException
-import com.jaehl.statuspages.NotFound
 
 class AuthController(
     private val userRepo : UserRepo,
@@ -51,5 +50,9 @@ class AuthController(
 
     suspend fun users(tokenData : TokenData) : List<UserSanitized> = accessTokenCallWithRole(userRepo, tokenData, allowedRoles = listOf(User.Role.Admin)) {
         return@accessTokenCallWithRole userRepo.getUsers().map { it.toUserSanitized() }
+    }
+
+    suspend fun changeUserRole(tokenData : TokenData, request : UserChangeRoleRequest) : User = accessTokenCallWithRole(userRepo, tokenData, allowedRoles = listOf(User.Role.Admin)) {
+        return@accessTokenCallWithRole userRepo.changeUserRole(request)
     }
 }

@@ -6,9 +6,11 @@ import com.jaehl.data.local.ObjectListLoader
 import com.jaehl.data.model.EnvironmentConfig
 import com.jaehl.data.model.User
 import com.jaehl.models.UserCredentials
+import com.jaehl.models.requests.UserChangeRoleRequest
 import com.jaehl.models.requests.UserRegisterRequest
 import com.jaehl.statuspages.AuthorizationException
 import com.jaehl.statuspages.BadRequest
+import com.jaehl.statuspages.NotFound
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.exposed.dao.IntEntity
@@ -26,6 +28,7 @@ interface UserRepo {
     suspend fun verifyAndGetUser(userCredentials: UserCredentials) : User?
     suspend fun getUser(userId : Int) : User?
     suspend fun getUsers() : List<User>
+    suspend fun changeUserRole(request : UserChangeRoleRequest) : User
 }
 
 class UserRepoImp(
@@ -69,7 +72,7 @@ class UserRepoImp(
             userName = request.userName
             email = request.email
             passwordHash = passwordHashing.hashPassword(request.password)
-            role = User.Role.User.value
+            role = User.Role.Unverified.value
         }.toUser()
     }
 
@@ -94,6 +97,13 @@ class UserRepoImp(
 
     override suspend fun getUsers(): List<User> = database.dbQuery {
         return@dbQuery UserEntity.all().map { it.toUser() }
+    }
+
+    override suspend fun changeUserRole(request: UserChangeRoleRequest): User = database.dbQuery {
+        val user = UserEntity.findById(request.userId) ?: throw NotFound("User not found : ${request.userId}")
+        if(user.userName == environmentConfig.adminUserName) throw BadRequest("can not change super Admin role")
+        user.role = User.Role.createByName(request.role)?.value ?: throw BadRequest("role name not valid ${request.role}")
+        return@dbQuery user.toUser()
     }
 }
 

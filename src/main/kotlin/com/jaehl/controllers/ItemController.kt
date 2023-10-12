@@ -10,7 +10,6 @@ import com.jaehl.data.repositories.GameRepo
 import com.jaehl.data.repositories.ItemRepo
 import com.jaehl.data.repositories.UserRepo
 import com.jaehl.models.requests.UpdateItemRequest
-import com.jaehl.routing.Controller
 import com.jaehl.statuspages.AuthorizationException
 
 class ItemController (
