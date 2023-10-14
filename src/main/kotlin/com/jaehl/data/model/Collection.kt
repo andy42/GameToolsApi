@@ -15,7 +15,11 @@ data class Collection(
         val id : Int,
         val collectionId : Int,
         val name : String,
-        val itemAmounts : List<ItemAmount>
+        val itemAmounts : List<ItemAmount>,
+        val showBaseIngredients: Boolean,
+        val collapseIngredients: Boolean,
+        val costReduction: Float,
+        val itemRecipePreferenceMap: Map<Int, Int?>
     )
 
     @Serializable

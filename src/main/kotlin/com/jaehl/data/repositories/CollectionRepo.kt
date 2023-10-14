@@ -17,18 +17,18 @@ interface CollectionRepo {
     suspend fun dropTables()
     suspend fun createTables()
     suspend fun addCollection(userId : Int, request : NewCollectionRequest) : Collection
-    suspend fun updateCollection(collectionId : Int, request : UpdateCollectionRequest) : Collection
+    suspend fun updateCollection(userId: Int, collectionId : Int, request : UpdateCollectionRequest) : Collection
     suspend fun deleteCollection(collectionId : Int)
-    suspend fun getCollections() : List<Collection>
+    suspend fun getCollections(userId: Int) : List<Collection>
     suspend fun getCollections(userId : Int, gameId : Int) : List<Collection>
-    suspend fun getCollection(collectionId: Int) : Collection
-    suspend fun addGroup(collectionId : Int, request : NewCollectionGroupRequest) : Collection.Group
-    suspend fun updateGroup(groupId : Int, request : UpdateCollectionGroupRequest) : Collection.Group
+    suspend fun getCollection(userId: Int, collectionId: Int) : Collection
+    suspend fun addGroup(userId: Int, collectionId : Int, request : NewCollectionGroupRequest) : Collection.Group
+    suspend fun updateGroup(userId: Int, groupId : Int, request : UpdateCollectionGroupRequest) : Collection.Group
     suspend fun deleteGroup(groupId: Int)
-    suspend fun getGroup(groupId : Int) : Collection.Group
-    suspend fun updateItemAmount(groupId : Int, itemId : Int, request : UpdateCollectionItemAmountRequest) : Collection.Group
-    suspend fun deleteItemAmount(groupId : Int, itemId : Int) : Collection.Group
-
+    suspend fun getGroup(userId: Int, groupId : Int) : Collection.Group
+    suspend fun updateItemAmount(userId: Int, groupId : Int, itemId : Int, request : UpdateCollectionItemAmountRequest) : Collection.Group
+    suspend fun deleteItemAmount(userId: Int, groupId : Int, itemId : Int) : Collection.Group
+    suspend fun updateGroupPreferences(userId : Int, collectionId: Int, groupId: Int, request : UpdateGroupPreferencesRequest) : Collection.Group
 }
 
 class CollectionRepoImp(
@@ -43,6 +43,8 @@ class CollectionRepoImp(
     }
 
     override suspend fun dropTables() = database.dbQuery {
+        SchemaUtils.drop(GroupPreferencesTable)
+        SchemaUtils.drop(GroupItemPreferencesTable)
         SchemaUtils.drop(CollectionItemAmountTable)
         SchemaUtils.drop(CollectionGroupTable)
         SchemaUtils.drop(CollectionTable)
@@ -52,6 +54,8 @@ class CollectionRepoImp(
         SchemaUtils.create(CollectionTable)
         SchemaUtils.create(CollectionGroupTable)
         SchemaUtils.create(CollectionItemAmountTable)
+        SchemaUtils.create(GroupPreferencesTable)
+        SchemaUtils.create(GroupItemPreferencesTable)
     }
 
     override suspend fun addCollection(userId : Int, request: NewCollectionRequest) : Collection = database.dbQuery {
@@ -81,10 +85,10 @@ class CollectionRepoImp(
                 }
             }
         }
-        return@dbQuery collectionEntity.toCollection()
+        return@dbQuery collectionEntity.toCollection(userId)
     }
 
-    override suspend fun updateCollection(collectionId : Int, request: UpdateCollectionRequest) : Collection = database.dbQuery {
+    override suspend fun updateCollection(userId: Int, collectionId : Int, request: UpdateCollectionRequest) : Collection = database.dbQuery {
 
         val collectionEntity = CollectionEntity.findById(collectionId) ?: throw NotFound("collection not found : $collectionId ")
         collectionEntity.name = request.name
@@ -97,6 +101,8 @@ class CollectionRepoImp(
                 CollectionItemAmountTable.deleteWhere { (group eq groupEntity.id) }
 
                 if (!groupSet.contains(groupEntity.id.value)) {
+                    GroupPreferencesTable.deleteWhere { (group eq groupEntity.id) }
+                    GroupItemPreferencesTable.deleteWhere { (group eq groupEntity.id) }
                     groupEntity.delete()
                 }
             }
@@ -123,31 +129,33 @@ class CollectionRepoImp(
             }
         }
 
-        return@dbQuery collectionEntity.toCollection()
+        return@dbQuery collectionEntity.toCollection(userId)
     }
 
     override suspend fun deleteCollection(collectionId: Int) = database.dbQuery {
         val collectionEntity = CollectionEntity.findById(collectionId) ?: throw NotFound("collection not found : $collectionId ")
         collectionEntity.groups.forEach { groupModel ->
             CollectionItemAmountTable.deleteWhere { group eq groupModel.id.value }
+            GroupPreferencesTable.deleteWhere { (group eq groupModel.id.value) }
+            GroupItemPreferencesTable.deleteWhere { (group eq groupModel.id.value) }
             groupModel.delete()
         }
         collectionEntity.delete()
     }
 
-    override suspend fun getCollections() : List<Collection> = database.dbQuery {
-        return@dbQuery CollectionEntity.all().map { it.toCollection() }
+    override suspend fun getCollections(userId: Int) : List<Collection> = database.dbQuery {
+        return@dbQuery CollectionEntity.all().map { it.toCollection(userId) }
     }
 
     override suspend fun getCollections(userId: Int, gameId: Int) : List<Collection> = database.dbQuery {
-        return@dbQuery CollectionEntity.find { (CollectionTable.user eq userId) and (CollectionTable.game eq gameId) }.map { it.toCollection() }
+        return@dbQuery CollectionEntity.find { (CollectionTable.user eq userId) and (CollectionTable.game eq gameId) }.map { it.toCollection(userId) }
     }
 
-    override suspend fun getCollection(collectionId: Int): Collection = database.dbQuery {
-        return@dbQuery CollectionEntity.findById(collectionId)?.toCollection() ?: throw NotFound("collection not found $collectionId")
+    override suspend fun getCollection(userId: Int, collectionId: Int): Collection = database.dbQuery {
+        return@dbQuery CollectionEntity.findById(collectionId)?.toCollection(userId) ?: throw NotFound("collection not found $collectionId")
     }
 
-    override suspend fun addGroup(collectionId: Int, request: NewCollectionGroupRequest): Collection.Group = database.dbQuery {
+    override suspend fun addGroup(userId: Int, collectionId: Int, request: NewCollectionGroupRequest): Collection.Group = database.dbQuery {
         val collectionEntity = CollectionEntity.findById(collectionId) ?: throw NotFound("collection not found : $request.collectionId ")
 
         val groupEntity = CollectionGroupEntity.new {
@@ -155,30 +163,34 @@ class CollectionRepoImp(
             this.name = request.name
         }
 
-        return@dbQuery groupEntity.toGroup()
+        return@dbQuery groupEntity.toGroup(userId)
     }
 
     override suspend fun updateGroup(
+        userId: Int,
         groupId: Int,
         request: UpdateCollectionGroupRequest
     ): Collection.Group = database.dbQuery {
         val groupEntity = CollectionGroupEntity.findById(groupId) ?: throw NotFound("groupId not found : $groupId ")
         groupEntity.name = request.name
-        return@dbQuery groupEntity.toGroup()
+        return@dbQuery groupEntity.toGroup(userId)
     }
 
     override suspend fun deleteGroup(groupId: Int) = database.dbQuery {
         val groupEntity = CollectionGroupEntity.findById(groupId) ?: throw NotFound("groupId not found : $groupId ")
+        GroupPreferencesTable.deleteWhere { (group eq groupEntity.id) }
+        GroupItemPreferencesTable.deleteWhere { (group eq groupEntity.id) }
         CollectionItemAmountTable.deleteWhere { (group eq groupEntity.id) }
         groupEntity.delete()
     }
 
-    override suspend fun getGroup(groupId: Int): Collection.Group = database.dbQuery {
+    override suspend fun getGroup(userId: Int, groupId: Int): Collection.Group = database.dbQuery {
         val groupEntity = CollectionGroupEntity.findById(groupId) ?: throw NotFound("groupId not found : $groupId ")
-        return@dbQuery groupEntity.toGroup()
+        return@dbQuery groupEntity.toGroup(userId)
     }
 
     override suspend fun updateItemAmount(
+        userId: Int,
         groupId: Int,
         itemId: Int,
         request: UpdateCollectionItemAmountRequest
@@ -198,13 +210,55 @@ class CollectionRepoImp(
             }
         }
 
-        return@dbQuery groupEntity.toGroup()
+        return@dbQuery groupEntity.toGroup(userId)
     }
 
-    override suspend fun deleteItemAmount(groupId: Int, itemId: Int): Collection.Group = database.dbQuery {
+    override suspend fun deleteItemAmount(userId: Int, groupId: Int, itemId: Int): Collection.Group = database.dbQuery {
         val groupEntity = CollectionGroupEntity.findById(groupId) ?: throw NotFound("groupId not found : $groupId ")
         CollectionItemAmountTable.deleteWhere { (CollectionItemAmountTable.group eq groupId) and (CollectionItemAmountTable.item eq itemId) }
-        return@dbQuery groupEntity.toGroup()
+        return@dbQuery groupEntity.toGroup(userId)
+    }
+
+    override suspend fun updateGroupPreferences(
+        userId: Int,
+        collectionId: Int,
+        groupId: Int,
+        request: UpdateGroupPreferencesRequest
+    ) : Collection.Group = database.dbQuery {
+        val group = CollectionGroupEntity.findById(groupId) ?: throw NotFound("group not found $groupId")
+        val user = UserEntity.findById(userId) ?: throw NotFound("user not found $userId")
+
+        if(GroupPreferencesTable.select({(GroupPreferencesTable.group eq group.id) and (GroupPreferencesTable.user eq user.id) }).empty()){
+            GroupPreferencesTable.insert {
+                it[GroupPreferencesTable.group] = group.id
+                it[GroupPreferencesTable.user] = user.id
+                it[showBaseIngredients] = request.showBaseIngredients
+                it[collapseIngredients] = request.collapseIngredients
+                it[costReduction] = request.costReduction
+            }
+        }
+        else {
+            GroupPreferencesTable.update( {(GroupPreferencesTable.group eq group.id) and (GroupPreferencesTable.user eq user.id) }) {
+                it[showBaseIngredients] = request.showBaseIngredients
+                it[collapseIngredients] = request.collapseIngredients
+                it[costReduction] = request.costReduction
+            }
+        }
+
+        GroupItemPreferencesTable.deleteWhere { (GroupItemPreferencesTable.group eq group.id) and (GroupItemPreferencesTable.user eq user.id) }
+        request.itemRecipePreferenceMap.forEach{entry: Map.Entry<Int, Int?> ->
+            val item = ItemEntity.findById(entry.key) ?: throw NotFound("item not found ${entry.key}")
+            val recipeId = entry.value
+            val recipe = if(recipeId != null) RecipeEntity.findById(recipeId) else null
+            GroupItemPreferencesTable.insert {
+                it[GroupItemPreferencesTable.group] = group.id
+                it[GroupItemPreferencesTable.user] = user.id
+                it[GroupItemPreferencesTable.item] = item.id
+                it[GroupItemPreferencesTable.recipe] = recipe?.id
+            }
+        }
+
+        return@dbQuery group.toGroup(userId)
     }
 }
 
@@ -221,14 +275,14 @@ class CollectionEntity(id: EntityID<Int>) : IntEntity(id) {
     var game by CollectionTable.game
     val groups by CollectionGroupEntity referrersOn CollectionGroupTable.collection
 
-    fun toCollection() : Collection {
+    fun toCollection(userId : Int) : Collection {
         return Collection(
             id = this.id.value,
             userId = this.user.value,
             gameId = this.game.value,
             name = this.name,
             groups = this.groups.map {
-                it.toGroup()
+                it.toGroup(userId)
             }
         )
     }
@@ -244,8 +298,16 @@ class CollectionGroupEntity(id: EntityID<Int>) : IntEntity(id) {
     var collection by CollectionEntity referencedOn CollectionGroupTable.collection
     var name by CollectionGroupTable.name
 
-    fun toGroup() : Collection.Group {
+    fun toGroup(userId : Int) : Collection.Group {
         val groupId = this.id
+        val groupPreferences = GroupPreferencesTable.select{ (GroupPreferencesTable.group eq groupId ) and (GroupPreferencesTable.user eq userId)}.firstOrNull()
+
+        val itemRecipePreferenceMap = hashMapOf<Int, Int?>()
+        GroupItemPreferencesTable.select{ (GroupItemPreferencesTable.group eq groupId ) and (GroupItemPreferencesTable.user eq userId)}
+            .forEach {
+                itemRecipePreferenceMap[it[GroupItemPreferencesTable.item].value] = it[GroupItemPreferencesTable.recipe]?.value
+            }
+
         return Collection.Group(
             id = this.id.value,
             collectionId = this.collection.id.value,
@@ -255,7 +317,11 @@ class CollectionGroupEntity(id: EntityID<Int>) : IntEntity(id) {
                     itemId = it[CollectionItemAmountTable.item].value,
                     amount = it[CollectionItemAmountTable.amount]
                 )
-            }
+            },
+            showBaseIngredients = groupPreferences?.get(GroupPreferencesTable.showBaseIngredients) ?: false,
+            collapseIngredients = groupPreferences?.get(GroupPreferencesTable.collapseIngredients) ?: true,
+            costReduction = groupPreferences?.get(GroupPreferencesTable.costReduction) ?: 1f,
+            itemRecipePreferenceMap = itemRecipePreferenceMap
         )
     }
 }
@@ -265,4 +331,21 @@ object CollectionItemAmountTable : Table("CollectionItemAmount") {
     val item = reference("item_id", ItemTable)
     val amount = integer("amount")
     override val primaryKey = PrimaryKey(arrayOf(group, item), "compositeKey")
+}
+
+object GroupPreferencesTable : Table("GroupPreferences") {
+    val group = reference("group_id", CollectionGroupTable)
+    val user = reference("user_id", UserTable)
+    val showBaseIngredients = bool("showBaseIngredients")
+    val collapseIngredients = bool("collapseIngredients")
+    val costReduction = float("costReduction")
+    override val primaryKey = PrimaryKey(arrayOf(group, user))
+}
+
+object GroupItemPreferencesTable : Table("GroupItemPreferences") {
+    val group = reference("group_id", CollectionGroupTable)
+    val user = reference("user_id", UserTable)
+    val item = reference("item_id", ItemTable)
+    val recipe = reference("recipe_id", RecipeTable).nullable()
+    override val primaryKey = PrimaryKey(arrayOf(group, user, item))
 }

@@ -36,7 +36,7 @@ class BackupController(
                 itemRepo.getCategories(),
                 itemRepo.getItems(),
                 recipeRepo.getRecipes(null),
-                collectionRepo.getCollections()
+                collectionRepo.getCollections(tokenData.userId)
             )
         }
 

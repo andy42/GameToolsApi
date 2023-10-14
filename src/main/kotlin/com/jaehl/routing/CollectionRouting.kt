@@ -122,6 +122,17 @@ fun Application.collectionRouting(collectionRepo: CollectionRepo, tokenManager :
                 collectionController.deleteItemAmount(tokenData, collectionId, groupId, itemId)
                 call.respond(HttpStatusCode.OK)
             }
+
+            post("collections/{collectionId}/{groupId}/preferences") {
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                val collectionId = call.parameters["collectionId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
+                val groupId = call.parameters["groupId"]?.toIntOrNull() ?: throw BadRequest("can not convert id to Int")
+
+                val request = call.receive<UpdateGroupPreferencesRequest>()
+                val response = collectionController.updateGroupPreferences(tokenData, collectionId, groupId, request)
+                call.respond(hashMapOf("data" to response))
+            }
         }
     }
 }

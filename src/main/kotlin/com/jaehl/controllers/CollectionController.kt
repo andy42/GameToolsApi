@@ -23,13 +23,13 @@ class CollectionController(
     }
 
     suspend fun updateCollection(tokenData : TokenData, collectionId : Int, request: UpdateCollectionRequest) : Collection = accessTokenCall(userRepo, tokenData) {
-        val collection = collectionRepo.getCollection(collectionId)
+        val collection = collectionRepo.getCollection(tokenData.userId, collectionId)
         if(collection.userId != tokenData.userId) throw AuthorizationException()
-        return@accessTokenCall collectionRepo.updateCollection(collectionId, request)
+        return@accessTokenCall collectionRepo.updateCollection(tokenData.userId, collectionId, request)
     }
 
     suspend fun deleteCollection(tokenData : TokenData, collectionId : Int) = accessTokenCall(userRepo, tokenData) {
-        val collection = collectionRepo.getCollection(collectionId)
+        val collection = collectionRepo.getCollection(tokenData.userId, collectionId)
         if(collection.userId != tokenData.userId) throw AuthorizationException()
         collectionRepo.deleteCollection( collectionId)
     }
@@ -37,7 +37,7 @@ class CollectionController(
     suspend fun getCollections(tokenData : TokenData, gameId : Int?) : List<Collection> = accessTokenCall(userRepo, tokenData) { user ->
         if(gameId == null){
             if(user.role != User.Role.Admin ) throw AuthorizationException()
-            return@accessTokenCall collectionRepo.getCollections()
+            return@accessTokenCall collectionRepo.getCollections(tokenData.userId)
         }
         else {
             return@accessTokenCall collectionRepo.getCollections(tokenData.userId, gameId)
@@ -45,40 +45,49 @@ class CollectionController(
     }
 
     suspend fun getCollection(tokenData : TokenData, collectionId : Int) : Collection = accessTokenCall(userRepo, tokenData) {
-        val collection = collectionRepo.getCollection(collectionId)
+        val collection = collectionRepo.getCollection(tokenData.userId, collectionId)
         if(collection.userId != tokenData.userId) throw AuthorizationException()
         return@accessTokenCall collection
     }
 
     suspend fun addGroup(tokenData : TokenData, collectionId : Int, request : NewCollectionGroupRequest) : Collection.Group = accessTokenCall(userRepo, tokenData) {
-        val collection = collectionRepo.getCollection(collectionId)
+        val collection = collectionRepo.getCollection(tokenData.userId, collectionId)
         if(tokenData.userId != collection.userId) throw AuthorizationException()
 
-        return@accessTokenCall collectionRepo.addGroup(collectionId, request)
+        return@accessTokenCall collectionRepo.addGroup(tokenData.userId, collectionId, request)
     }
 
     suspend fun updateGroup(tokenData : TokenData, collectionId : Int, groupId : Int, request : UpdateCollectionGroupRequest) : Collection.Group = accessTokenCall(userRepo, tokenData) {
-        val collection = collectionRepo.getCollection(collectionId)
+        val collection = collectionRepo.getCollection(tokenData.userId, collectionId)
         if(tokenData.userId != collection.userId) throw AuthorizationException()
-        return@accessTokenCall collectionRepo.updateGroup(groupId, request)
+        return@accessTokenCall collectionRepo.updateGroup(tokenData.userId, groupId, request)
     }
 
     suspend fun deleteGroup(tokenData : TokenData, collectionId : Int, groupId : Int) = accessTokenCall(userRepo, tokenData) {
-        val collection = collectionRepo.getCollection(collectionId)
+        val collection = collectionRepo.getCollection(tokenData.userId, collectionId)
         if(tokenData.userId != collection.userId) throw AuthorizationException()
         collectionRepo.deleteGroup(groupId)
     }
 
     suspend fun updateItemAmount(tokenData : TokenData, collectionId : Int, groupId : Int, itemId : Int, request : UpdateCollectionItemAmountRequest) : Collection.Group = accessTokenCall(userRepo, tokenData) {
-        val collection = collectionRepo.getCollection(collectionId)
+        val collection = collectionRepo.getCollection(tokenData.userId, collectionId)
         if(tokenData.userId != collection.userId) throw AuthorizationException()
-        return@accessTokenCall collectionRepo.updateItemAmount(groupId, itemId, request)
+        return@accessTokenCall collectionRepo.updateItemAmount(tokenData.userId, groupId, itemId, request)
     }
 
     suspend fun deleteItemAmount(tokenData : TokenData, collectionId : Int, groupId : Int, itemId : Int) : Collection.Group = accessTokenCall(userRepo, tokenData) {
-        val collection = collectionRepo.getCollection(collectionId)
+        val collection = collectionRepo.getCollection(tokenData.userId, collectionId)
         if(tokenData.userId != collection.userId) throw AuthorizationException()
-        return@accessTokenCall collectionRepo.deleteItemAmount(groupId, itemId)
+        return@accessTokenCall collectionRepo.deleteItemAmount(tokenData.userId, groupId, itemId)
+    }
+
+    suspend fun updateGroupPreferences(
+        tokenData : TokenData,
+        collectionId: Int,
+        groupId: Int,
+        request : UpdateGroupPreferencesRequest
+    ) : Collection.Group = accessTokenCall(userRepo, tokenData) {
+        return@accessTokenCall collectionRepo.updateGroupPreferences(tokenData.userId, collectionId, groupId, request)
     }
 }
 
