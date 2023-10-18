@@ -14,13 +14,10 @@ import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.insertAndGetId
 import java.io.FileOutputStream
 
 interface ImageRepo {
-    suspend fun dropTables()
-    suspend fun createTables()
     suspend fun addNew(imageType: ImageType, description : String, data : ByteArray) : ImageMetaData
     suspend fun getImagePath(imageId : Int) : String?
     suspend fun getImageFile(imageId : Int) : ImageData
@@ -34,22 +31,6 @@ class ImageRepoImp(
     private val coroutineScope: CoroutineScope,
     private val environmentConfig : EnvironmentConfig
 ) : ImageRepo {
-
-    init {
-        coroutineScope.launch {
-            database.dbQuery {
-                SchemaUtils.create(ImageTable)
-            }
-        }
-    }
-
-    override suspend fun dropTables() = database.dbQuery {
-        SchemaUtils.drop(ImageTable)
-    }
-
-    override suspend fun createTables() = database.dbQuery {
-        SchemaUtils.create(ImageTable)
-    }
 
     override suspend fun addNew(imageType: ImageType, description : String, data: ByteArray): ImageMetaData = database.dbQuery {
 

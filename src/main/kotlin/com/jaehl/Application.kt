@@ -50,6 +50,7 @@ fun Application.module() {
     )
 
     val database = Database(environmentConfig)
+    database.createTables()
 
     val gameRepo: GameRepo = GameRepoImp(
         database = database,
@@ -95,6 +96,7 @@ fun Application.module() {
 
     val backupController = BackupController(
         environmentConfig,
+        database,
         userRepo,
         gameRepo,
         imageRepo,

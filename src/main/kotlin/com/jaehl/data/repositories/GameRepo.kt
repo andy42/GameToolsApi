@@ -4,10 +4,10 @@ import com.jaehl.data.database.Database
 import com.jaehl.data.model.Game
 import com.jaehl.models.requests.NewGameRequest
 import com.jaehl.models.requests.UpdateGameRequest
+import com.jaehl.statuspages.CategoryIdNotfound
 import com.jaehl.statuspages.GameIdNotfound
 import com.jaehl.statuspages.ImageIdNotfound
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -15,8 +15,6 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
 
 interface GameRepo {
-    suspend fun dropTables()
-    suspend fun createTables()
     suspend fun addNew(request : NewGameRequest) : Game
     suspend fun getGame(gameId : Int) : Game?
     suspend fun getGames() : List<Game>
@@ -29,20 +27,6 @@ class GameRepoImp(
     private val coroutineScope: CoroutineScope
 ) : GameRepo {
 
-    init {
-        coroutineScope.launch {
-            createTables()
-        }
-    }
-
-    override suspend fun dropTables() = database.dbQuery {
-        SchemaUtils.drop(GameTable)
-    }
-
-    override suspend fun createTables() = database.dbQuery {
-        SchemaUtils.create(GameTable)
-    }
-
     override suspend fun addNew(request : NewGameRequest) = database.dbQuery {
 
         val iconImage = ImageEntity.findById(request.icon) ?: throw ImageIdNotfound(request.icon)
@@ -50,6 +34,11 @@ class GameRepoImp(
 
         val gameEntity = GameEntity.new {
             this.name = request.name
+            this.itemCategories = SizedCollection(
+                request.itemCategories.map {categoryId ->
+                    CategoryEntity.findById(categoryId) ?: throw CategoryIdNotfound(categoryId)
+                }
+            )
             this.icon = iconImage.id
             this.banner = bannerImage.id
         }
@@ -70,6 +59,11 @@ class GameRepoImp(
         val iconImage = ImageEntity.findById(request.icon) ?: throw ImageIdNotfound(request.icon)
         val bannerImage = ImageEntity.findById(request.banner) ?: throw ImageIdNotfound(request.banner)
         gameEntity.name = request.name
+        gameEntity.itemCategories = SizedCollection(
+            request.itemCategories.map {categoryId ->
+                CategoryEntity.findById(categoryId) ?: throw CategoryIdNotfound(categoryId)
+            }
+        )
         gameEntity.icon = iconImage.id
         gameEntity.banner = bannerImage.id
         return@dbQuery Game.create(gameEntity)
@@ -90,6 +84,13 @@ object GameTable : IntIdTable("Games") {
 class GameEntity(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<GameEntity>(GameTable)
     var name by GameTable.name
+    var itemCategories by CategoryEntity via GameCategoriesTable
     var icon by GameTable.icon
     var banner by GameTable.banner
+}
+
+object GameCategoriesTable : Table("GameCategories") {
+    val game = reference("game_id", GameTable)
+    val category = reference("category_id", CategorieTable)
+    override val primaryKey = PrimaryKey(game, category)
 }

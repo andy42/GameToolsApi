@@ -26,7 +26,8 @@ interface BackupRepo {
         itemCategories : List<ItemCategory>,
         items : List<Item>,
         recipes: List<Recipe>,
-        collections : List<Collection>
+        collections : List<Collection>,
+        collectionsGroupPreference : List<CollectionsGroupPreference>
     ) : Backup
     fun getBackups() : List<Backup>
     fun getUsers(backupId : String) : List<User>
@@ -36,7 +37,8 @@ interface BackupRepo {
     fun getItemCategories(backupId : String) : List<ItemCategory>
     fun getItems(backupId : String) : List<Item>
     fun getRecipes(backupId : String) : List<Recipe>
-    fun getCollections(backupId : String) : List<Collection>
+    fun getCollections(backupId : String) : List<CollectionBackup>
+    fun getCollectionsGroupPreference(backupId : String) : List<CollectionsGroupPreference>
 }
 
 class BackupRepoImp(
@@ -83,7 +85,8 @@ class BackupRepoImp(
         itemCategories : List<ItemCategory>,
         items : List<Item>,
         recipes: List<Recipe>,
-        collections : List<Collection>
+        collections : List<Collection>,
+        collectionsGroupPreference : List<CollectionsGroupPreference>
     ) : Backup {
 
         val date = LocalDateTime.now()
@@ -109,7 +112,8 @@ class BackupRepoImp(
         saveList(itemCategories, getBackupPath(folderName), itemCategoriesFile)
         saveList(items, getBackupPath(folderName), itemsFile)
         saveList(recipes, getBackupPath(folderName), recipesFile)
-        saveList(collections, getBackupPath(folderName), collectionsFile)
+        saveList(collections.map { it.toCollectionBackup() }, getBackupPath(folderName), collectionsFile)
+        saveList(collectionsGroupPreference, getBackupPath(folderName), collectionsGroupPreferenceFile)
 
         return metaData
     }
@@ -167,9 +171,14 @@ class BackupRepoImp(
         return loadData<List<Recipe>>(path)
     }
 
-    override fun getCollections(backupId : String) : List<Collection> {
+    override fun getCollections(backupId : String) : List<CollectionBackup> {
         val path = Paths.get(LocalFiles.getDir(getBackupPath()).absolutePathString(), backupId, collectionsFile)
-        return loadData<List<Collection>>(path)
+        return loadData<List<CollectionBackup>>(path)
+    }
+
+    override fun getCollectionsGroupPreference(backupId: String): List<CollectionsGroupPreference> {
+        val path = Paths.get(LocalFiles.getDir(getBackupPath()).absolutePathString(), backupId, collectionsGroupPreferenceFile)
+        return loadData<List<CollectionsGroupPreference>>(path)
     }
 
     companion object {
@@ -186,5 +195,6 @@ class BackupRepoImp(
         private val itemsFile = "items.json"
         private val recipesFile = "recipes.json"
         private val collectionsFile = "collections.json"
+        private val collectionsGroupPreferenceFile = "collectionsGroupPreference.json"
     }
 }

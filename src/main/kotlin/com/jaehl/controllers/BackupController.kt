@@ -1,16 +1,16 @@
 package com.jaehl.controllers
 
+import com.jaehl.data.database.Database
 import com.jaehl.data.model.*
+import com.jaehl.data.model.Collection
 import com.jaehl.data.repositories.*
 import com.jaehl.models.ImageType
-import com.jaehl.models.requests.NewCollectionRequest
-import com.jaehl.models.requests.NewGameRequest
-import com.jaehl.models.requests.NewRecipeRequest
-import com.jaehl.models.requests.RecipeAmountRequest
+import com.jaehl.models.requests.*
 import com.jaehl.statuspages.ServerError
 
 class BackupController(
     val environmentConfig : EnvironmentConfig,
+    private val database: Database,
     val userRepo : UserRepo,
     val gameRepo : GameRepo,
     val imageRepo : ImageRepo,
@@ -36,7 +36,8 @@ class BackupController(
                 itemRepo.getCategories(),
                 itemRepo.getItems(),
                 recipeRepo.getRecipes(null),
-                collectionRepo.getCollections()
+                collectionRepo.getCollections(tokenData.userId),
+                collectionRepo.getCollectionsGroupPreference()
             )
         }
 
@@ -48,20 +49,11 @@ class BackupController(
             val gameMap = hashMapOf<Int, Game>()
             val itemCategoryMap = hashMapOf<Int, ItemCategory>()
             val itemMap = hashMapOf<Int, Item>()
+            val collectionMap = hashMapOf<Int, Collection>()
+            val collectionGroupMap = hashMapOf<Int, Collection.Group>()
 
-            collectionRepo.dropTables()
-            recipeRepo.dropTables()
-            itemRepo.dropTables()
-            gameRepo.dropTables()
-            imageRepo.dropTables()
-            userRepo.dropTables()
-
-            userRepo.createTables()
-            imageRepo.createTables()
-            gameRepo.createTables()
-            itemRepo.createTables()
-            recipeRepo.createTables()
-            collectionRepo.createTables()
+            database.dropTables()
+            database.createTables()
 
             backupRepo.getUsers(backupId)
                 .forEach {
@@ -79,11 +71,21 @@ class BackupController(
                     imageMap[it.id] = imageMetaData
                 }
 
+            backupRepo.getItemCategories(backupId)
+                .forEach {
+                    val itemCategory = itemRepo.addCategory(it.name)
+                    itemCategoryMap[it.id] = itemCategory
+                }
+
             backupRepo.getGames(backupId)
                 .forEach {
                     val game = gameRepo.addNew(
                         NewGameRequest(
                             name = it.name,
+                            itemCategories = it.itemCategories
+                                .map {itemCategory ->
+                                    itemCategory.id
+                                },
                             icon = imageMap[it.icon]?.id ?: throw ServerError("missing image Id ${it.icon}"),
                             banner = imageMap[it.banner]?.id ?: throw ServerError("missing image Id ${it.banner}"),
                         )
@@ -91,11 +93,7 @@ class BackupController(
                     gameMap[it.id] = game
                 }
 
-            backupRepo.getItemCategories(backupId)
-                .forEach {
-                    val itemCategory = itemRepo.addCategory(it.name)
-                    itemCategoryMap[it.id] = itemCategory
-                }
+
 
             backupRepo.getItems(backupId)
                 .forEach {
@@ -136,25 +134,45 @@ class BackupController(
 
             backupRepo.getCollections(backupId)
                 .forEach {
-                    collectionRepo.addCollection(
+                    val collection = collectionRepo.addCollection(
                         userId = it.userId,
                         request = NewCollectionRequest(
                             gameId =  gameMap[it.gameId]?.id ?: throw ServerError("missing game Id ${it.gameId}"),
                             name = it.name,
-                            groups = it.groups.map { group ->
-                                NewCollectionRequest.Group(
-                                    name = group.name,
-                                    itemAmounts = group.itemAmounts.map { itemAmount ->
-                                        NewCollectionRequest.ItemAmount(
-                                            itemId = itemMap[itemAmount.itemId]?.id ?: throw Exception("item not found : ${itemAmount.itemId}"),
-                                            amount = itemAmount.amount
-                                        )
-                                    }
-                                )
-                            }
+                            groups = listOf()
                         )
                     )
+                    collectionMap[it.id] = collection
+                    it.groups.forEach { oldGroup ->
+                        val group = collectionRepo.addGroup(
+                            collection.userId,
+                            collection.id,
+                            NewCollectionGroupRequest(
+                                name = oldGroup.name,
+                                itemAmounts = oldGroup.itemAmounts.map { itemAmount ->
+                                    NewCollectionRequest.ItemAmount(
+                                        itemId = itemMap[itemAmount.itemId]?.id ?: throw Exception("item not found : ${itemAmount.itemId}"),
+                                        amount = itemAmount.amount
+                                    )
+                                }
+                            )
+                        )
+                        collectionGroupMap[oldGroup.id] = group
+                    }
                 }
 
+            backupRepo.getCollectionsGroupPreference(backupId).forEach {
+                collectionRepo.updateGroupPreferences(
+                    userId = userMap[it.userId]?.id ?: throw ServerError("missing userId  ${it.userId}"),
+                    collectionId = collectionMap[it.collectionId]?.id ?: throw ServerError("missing collectionId  ${it.collectionId}"),
+                    groupId = collectionGroupMap[it.groupId]?.id ?: throw ServerError("missing groupId  ${it.groupId}"),
+                    request = UpdateGroupPreferencesRequest(
+                        showBaseIngredients = it.showBaseIngredients ,
+                        collapseIngredients = it.collapseIngredients,
+                        costReduction = it.costReduction,
+                        itemRecipePreferenceMap = it.groupItemPreferences
+                    )
+                )
+            }
         }
 }
