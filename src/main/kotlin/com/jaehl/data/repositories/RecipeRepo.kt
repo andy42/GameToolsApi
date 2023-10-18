@@ -10,22 +10,18 @@ import com.jaehl.statuspages.GameIdNotfound
 import com.jaehl.statuspages.ItemIdNotfound
 import com.jaehl.statuspages.NotFound
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
-import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.SizedCollection
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.deleteWhere
 
 interface RecipeRepo {
-    suspend fun dropTables()
-    suspend fun createTables()
     suspend fun addRecipe(request : NewRecipeRequest) : Recipe
     suspend fun updateRecipe(recipeId : Int, request : UpdateRecipeRequest) : Recipe
     suspend fun deleteRecipe(recipeId : Int)
@@ -37,26 +33,6 @@ class RecipeRepoImp(
     private val database: Database,
     private val coroutineScope: CoroutineScope
 ) : RecipeRepo {
-
-    init {
-        coroutineScope.launch {
-            createTables()
-        }
-    }
-
-    override suspend fun dropTables() = database.dbQuery {
-        SchemaUtils.drop(RecipeOutputTable)
-        SchemaUtils.drop(RecipeInputTable)
-        SchemaUtils.drop(RecipeCraftedAtTable)
-        SchemaUtils.drop(RecipeTable)
-    }
-
-    override suspend fun createTables() = database.dbQuery {
-        SchemaUtils.create(RecipeTable)
-        SchemaUtils.create(RecipeCraftedAtTable)
-        SchemaUtils.create(RecipeInputTable)
-        SchemaUtils.create(RecipeOutputTable)
-    }
 
     private fun updateRecipeInputs(recipeEntity : RecipeEntity, inputs : List<RecipeAmountRequest>) {
         inputs.forEach { recipeAmount ->

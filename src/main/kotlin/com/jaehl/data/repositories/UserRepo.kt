@@ -17,12 +17,9 @@ import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
-import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.select
 
 interface UserRepo {
-    suspend fun dropTables()
-    suspend fun createTables()
     suspend fun createUser(request : UserRegisterRequest) : User
     suspend fun addUserFromBackup(user : User) : User
     suspend fun verifyAndGetUser(userCredentials: UserCredentials) : User?
@@ -42,7 +39,6 @@ class UserRepoImp(
     init {
         coroutineScope.launch {
             database.dbQuery {
-                SchemaUtils.create(UserTable)
                 addAdminAccount()
             }
         }
@@ -57,14 +53,6 @@ class UserRepoImp(
                 role = User.Role.Admin.value
             }
         }
-    }
-
-    override suspend fun dropTables() = database.dbQuery {
-        SchemaUtils.drop(UserTable)
-    }
-
-    override suspend fun createTables() = database.dbQuery {
-        SchemaUtils.create(UserTable)
     }
 
     override suspend fun createUser(request : UserRegisterRequest): User = database.dbQuery {

@@ -3,10 +3,10 @@ package com.jaehl.data.repositories
 import com.jaehl.data.database.Database
 import com.jaehl.data.model.Item
 import com.jaehl.data.model.ItemCategory
+import com.jaehl.extensions.toItemCategory
 import com.jaehl.models.requests.UpdateItemRequest
 import com.jaehl.statuspages.*
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -15,8 +15,6 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 interface ItemRepo {
-    suspend fun dropTables()
-    suspend fun createTables()
     suspend fun addNewItem(gameId : Int, name : String, imageId : Int, categories : List<Int>) : Item
     suspend fun updateItem(itemId : Int, request : UpdateItemRequest) : Item
     suspend fun getItem(itemId : Int) : Item
@@ -32,38 +30,13 @@ class ItemRepoImp(
     private val coroutineScope: CoroutineScope
 ) : ItemRepo {
 
-    init {
-        coroutineScope.launch {
-            createTables()
-        }
-    }
-
-    override suspend fun dropTables() = database.dbQuery {
-        SchemaUtils.drop(ItemCategorieTable)
-        SchemaUtils.drop(ItemTable)
-        SchemaUtils.drop(CategorieTable)
-    }
-
-    override suspend fun createTables() = database.dbQuery {
-        SchemaUtils.create(GameTable)
-        SchemaUtils.create(CategorieTable)
-        SchemaUtils.create(ItemCategorieTable)
-    }
-
     private fun convertItemRow(itemEntity: ItemEntity) : Item {
         return Item(
             id = itemEntity.id.value,
             name = itemEntity.name,
-            categories = itemEntity.categories.map { convertCategoryRow(it) },
+            categories = itemEntity.categories.map { it.toItemCategory() },
             image = itemEntity.image.value,
             game = itemEntity.game.value
-        )
-    }
-
-    private fun convertCategoryRow(categoryEntity: CategoryEntity) : ItemCategory {
-        return ItemCategory(
-            id = categoryEntity.id.value,
-            name = categoryEntity.name
         )
     }
 
@@ -119,11 +92,11 @@ class ItemRepoImp(
         val categoryEntity = CategoryEntity.new {
             this.name = name
         }
-        return@dbQuery convertCategoryRow(categoryEntity)
+        return@dbQuery categoryEntity.toItemCategory()
     }
 
     override suspend fun getCategories(): List<ItemCategory> = database.dbQuery {
-        return@dbQuery CategoryEntity.all().toList().map { convertCategoryRow(it) }
+        return@dbQuery CategoryEntity.all().toList().map { it.toItemCategory() }
     }
 }
 

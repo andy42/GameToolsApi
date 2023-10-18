@@ -2,20 +2,18 @@ package com.jaehl.data.repositories
 
 import com.jaehl.data.database.Database
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import com.jaehl.data.model.Collection
+import com.jaehl.data.model.CollectionsGroupPreference
 import com.jaehl.models.requests.*
 import com.jaehl.statuspages.NotFound
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 interface CollectionRepo {
-    suspend fun dropTables()
-    suspend fun createTables()
     suspend fun addCollection(userId : Int, request : NewCollectionRequest) : Collection
     suspend fun updateCollection(userId: Int, collectionId : Int, request : UpdateCollectionRequest) : Collection
     suspend fun deleteCollection(collectionId : Int)
@@ -29,34 +27,13 @@ interface CollectionRepo {
     suspend fun updateItemAmount(userId: Int, groupId : Int, itemId : Int, request : UpdateCollectionItemAmountRequest) : Collection.Group
     suspend fun deleteItemAmount(userId: Int, groupId : Int, itemId : Int) : Collection.Group
     suspend fun updateGroupPreferences(userId : Int, collectionId: Int, groupId: Int, request : UpdateGroupPreferencesRequest) : Collection.Group
+    suspend fun getCollectionsGroupPreference() : List<CollectionsGroupPreference>
 }
 
 class CollectionRepoImp(
     private val database: Database,
     private val coroutineScope: CoroutineScope,
 ) : CollectionRepo {
-
-    init {
-        coroutineScope.launch {
-            createTables()
-        }
-    }
-
-    override suspend fun dropTables() = database.dbQuery {
-        SchemaUtils.drop(GroupPreferencesTable)
-        SchemaUtils.drop(GroupItemPreferencesTable)
-        SchemaUtils.drop(CollectionItemAmountTable)
-        SchemaUtils.drop(CollectionGroupTable)
-        SchemaUtils.drop(CollectionTable)
-    }
-
-    override suspend fun createTables() = database.dbQuery {
-        SchemaUtils.create(CollectionTable)
-        SchemaUtils.create(CollectionGroupTable)
-        SchemaUtils.create(CollectionItemAmountTable)
-        SchemaUtils.create(GroupPreferencesTable)
-        SchemaUtils.create(GroupItemPreferencesTable)
-    }
 
     override suspend fun addCollection(userId : Int, request: NewCollectionRequest) : Collection = database.dbQuery {
 
@@ -163,6 +140,16 @@ class CollectionRepoImp(
             this.name = request.name
         }
 
+        request.itemAmounts.forEach { itemAmounts ->
+            val itemEntity = ItemEntity.findById(itemAmounts.itemId)
+                ?: throw NotFound("item id not found : ${itemAmounts.itemId}")
+            CollectionItemAmountTable.insert {
+                it[group] = groupEntity.id
+                it[item] = itemEntity.id
+                it[amount] = itemAmounts.amount
+            }
+        }
+
         return@dbQuery groupEntity.toGroup(userId)
     }
 
@@ -259,6 +246,30 @@ class CollectionRepoImp(
         }
 
         return@dbQuery group.toGroup(userId)
+    }
+
+    override suspend fun getCollectionsGroupPreference(): List<CollectionsGroupPreference> = database.dbQuery {
+        return@dbQuery GroupPreferencesTable.selectAll().map {
+            val userId = it[GroupPreferencesTable.user].value
+            val groupId = it[GroupPreferencesTable.group].value
+            val itemPreferencesMap = hashMapOf<Int, Int?>()
+            GroupItemPreferencesTable.select( (GroupItemPreferencesTable.group eq groupId) and (GroupItemPreferencesTable.user eq userId) )
+                .forEach { resultRow ->
+                    itemPreferencesMap[resultRow[GroupItemPreferencesTable.item].value] = resultRow[GroupItemPreferencesTable.recipe]?.value
+                }
+
+            val groupEntity = CollectionGroupEntity.findById(groupId) ?: throw Exception("groupId not found $groupId")
+
+            return@map CollectionsGroupPreference(
+                userId = userId,
+                collectionId = groupEntity.collection.id.value,
+                groupId = groupId,
+                showBaseIngredients = it[GroupPreferencesTable.showBaseIngredients],
+                collapseIngredients = it[GroupPreferencesTable.collapseIngredients],
+                costReduction = it[GroupPreferencesTable.costReduction],
+                groupItemPreferences = itemPreferencesMap
+            )
+        }
     }
 }
 
