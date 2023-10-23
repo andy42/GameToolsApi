@@ -44,7 +44,7 @@ class AuthController(
         )
     }
 
-    suspend fun userMe(tokenData : TokenData) : UserSanitized = accessTokenCall(userRepo, tokenData) { user ->
+    suspend fun userMe(tokenData : TokenData) : UserSanitized = accessTokenCall(userRepo, tokenData, allowUnverified = true) { user ->
         return@accessTokenCall user.toUserSanitized()
     }
 
