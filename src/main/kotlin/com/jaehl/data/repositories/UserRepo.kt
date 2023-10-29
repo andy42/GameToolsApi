@@ -6,6 +6,7 @@ import com.jaehl.data.local.ObjectListLoader
 import com.jaehl.data.model.EnvironmentConfig
 import com.jaehl.data.model.User
 import com.jaehl.models.UserCredentials
+import com.jaehl.models.requests.UserChangePasswordRequest
 import com.jaehl.models.requests.UserChangeRoleRequest
 import com.jaehl.models.requests.UserRegisterRequest
 import com.jaehl.statuspages.AuthorizationException
@@ -25,7 +26,8 @@ interface UserRepo {
     suspend fun verifyAndGetUser(userCredentials: UserCredentials) : User?
     suspend fun getUser(userId : Int) : User?
     suspend fun getUsers() : List<User>
-    suspend fun changeUserRole(request : UserChangeRoleRequest) : User
+    suspend fun changeUserRole(userId : Int, request : UserChangeRoleRequest) : User
+    suspend fun changeUserPassword(userId : Int, request : UserChangePasswordRequest)
 }
 
 class UserRepoImp(
@@ -56,6 +58,23 @@ class UserRepoImp(
     }
 
     override suspend fun createUser(request : UserRegisterRequest): User = database.dbQuery {
+
+        val uniqueUserName = (UserEntity.find { UserTable.userName eq request.userName }.firstOrNull() == null)
+        val uniqueEmail = (UserEntity.find { UserTable.userName eq request.email }.firstOrNull() == null)
+
+        if(uniqueUserName || uniqueEmail){
+            val responseMessage = if(uniqueUserName && uniqueEmail){
+                "Your User Name and Email are already in user"
+            }
+            else if(uniqueUserName) {
+                "Your User Name is already in user"
+            }
+            else {
+                "Your Email is already in user"
+            }
+            throw BadRequest(responseMessage)
+        }
+
         return@dbQuery UserEntity.new {
             userName = request.userName
             email = request.email
@@ -87,11 +106,16 @@ class UserRepoImp(
         return@dbQuery UserEntity.all().map { it.toUser() }
     }
 
-    override suspend fun changeUserRole(request: UserChangeRoleRequest): User = database.dbQuery {
-        val user = UserEntity.findById(request.userId) ?: throw NotFound("User not found : ${request.userId}")
+    override suspend fun changeUserRole(userId : Int, request: UserChangeRoleRequest): User = database.dbQuery {
+        val user = UserEntity.findById(userId) ?: throw NotFound("User not found : $userId")
         if(user.userName == environmentConfig.adminUserName) throw BadRequest("can not change super Admin role")
         user.role = User.Role.createByName(request.role)?.value ?: throw BadRequest("role name not valid ${request.role}")
         return@dbQuery user.toUser()
+    }
+
+    override suspend fun changeUserPassword(userId: Int, request: UserChangePasswordRequest) = database.dbQuery {
+        val user = UserEntity.findById(userId) ?: throw NotFound("user not found $userId")
+        user.passwordHash = passwordHashing.hashPassword(request.password)
     }
 }
 

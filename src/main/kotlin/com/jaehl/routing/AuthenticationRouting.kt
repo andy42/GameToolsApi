@@ -5,10 +5,13 @@ import com.jaehl.data.auth.TokenManager
 import com.jaehl.data.repositories.UserRepo
 import com.jaehl.extensions.toUserSanitized
 import com.jaehl.models.UserCredentials
+import com.jaehl.models.requests.UserChangePasswordRequest
 import com.jaehl.models.requests.UserChangeRoleRequest
 import com.jaehl.models.requests.UserRegisterRequest
 import com.jaehl.models.response.DataResponse
 import com.jaehl.statuspages.BadRequest
+import com.jaehl.statuspages.ItemBadRequest
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
@@ -49,6 +52,14 @@ fun Application.authenticationRouting(userRepo : UserRepo, tokenManager : TokenM
                 call.respond(DataResponse(user))
             }
 
+            get("/user/{id}"){
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                val userId = call.parameters["id"]?.toIntOrNull() ?: throw ItemBadRequest("can not convert id to Int")
+                val user = authController.getUser(tokenData, userId)
+                call.respond(DataResponse(user))
+            }
+
             get("/user"){
                 val jwtPrincipal = call.principal<JWTPrincipal>()
                 val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
@@ -56,12 +67,22 @@ fun Application.authenticationRouting(userRepo : UserRepo, tokenManager : TokenM
                 call.respond(DataResponse(users))
             }
 
-            post("/user/changeRole") {
+            post("/user/{userId}/changeRole") {
                 val jwtPrincipal = call.principal<JWTPrincipal>()
                 val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                val userId = call.parameters["userId"]?.toIntOrNull() ?: throw ItemBadRequest("can not convert id to Int")
                 val userChangeRoleRequest = call.receive<UserChangeRoleRequest>()
-                val user = authController.changeUserRole(tokenData, userChangeRoleRequest)
+                val user = authController.changeUserRole(tokenData, userId, userChangeRoleRequest)
                 call.respond(DataResponse(user.toUserSanitized()))
+            }
+
+            post("/user/{userId}/changePassword") {
+                val jwtPrincipal = call.principal<JWTPrincipal>()
+                val tokenData = tokenManager.getTokenData(jwtPrincipal) ?: throw BadRequest()
+                val userId = call.parameters["userId"]?.toIntOrNull() ?: throw ItemBadRequest("can not convert id to Int")
+                val userChangePasswordRequest = call.receive<UserChangePasswordRequest>()
+                authController.changeUserPassword(tokenData, userId, userChangePasswordRequest)
+                call.respond(HttpStatusCode.OK)
             }
         }
     }
