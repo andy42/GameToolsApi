@@ -1,6 +1,7 @@
 package com.jaehl.repositories
 
 import com.jaehl.data.model.Game
+import com.jaehl.data.model.ItemCategory
 import com.jaehl.data.repositories.GameRepo
 import com.jaehl.models.requests.NewGameRequest
 import com.jaehl.models.requests.UpdateGameRequest
@@ -16,10 +17,14 @@ class GameRepoMock : GameRepo {
         lastIndex = 0
     }
 
-    override suspend fun addNew(request : NewGameRequest): Game? {
+    override suspend fun addNew(request : NewGameRequest): Game {
         val newGame = Game(
             id = lastIndex++,
             name = request.name,
+            itemCategories = request.itemCategories.map {
+                //TODO fix this to be a lookup for ItemCategory
+                ItemCategory(it , it.toString())
+            },
             icon = request.icon,
             banner = request.banner
         )

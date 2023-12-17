@@ -41,10 +41,12 @@ class GameControllerTest {
         val response = controller.addNewGame(
             tokenData = TokenData(
                 userId = user.id,
+                userName = user.userName,
                 tokenType = TokenType.AccessToken
             ),
             newGameRequest = NewGameRequest(
                 name = gameName,
+                itemCategories = listOf(),
                 icon = 1,
                 banner = 1
             )
@@ -63,10 +65,12 @@ class GameControllerTest {
             controller.addNewGame(
                 tokenData = TokenData(
                     userId = user.id,
+                    userName = user.userName,
                     tokenType = TokenType.AccessToken
                 ),
                 newGameRequest = NewGameRequest(
                     name = gameName,
+                    itemCategories = listOf(),
                     icon = 1,
                     banner = 1
                 )
@@ -81,18 +85,24 @@ class GameControllerTest {
         userRepo.setUserRole(user.id, User.Role.Admin)
 
         val game = gameRepo.addNew(
-            NewGameRequest("testGame", 1, 1)
+            NewGameRequest(
+                name = "testGame",
+                itemCategories = listOf(),
+                icon = 1,
+                banner = 1)
         )
 
         val newName = "updatedName"
         val response = controller.updateGame(
             tokenData = TokenData(
                 userId = user.id,
+                userName = user.userName,
                 tokenType = TokenType.AccessToken
             ),
             gameId = game?.id ?: -1,
             updateGameRequest = UpdateGameRequest(
                 name = newName,
+                itemCategories = listOf(),
                 icon = 1,
                 banner = 1
             )
@@ -107,18 +117,24 @@ class GameControllerTest {
         userRepo.setUserRole(user.id, User.Role.User)
 
         val game = gameRepo.addNew(
-            NewGameRequest("testGame", 1, 1)
+            NewGameRequest(
+                name ="testGame",
+                itemCategories = listOf(),
+                icon = 1,
+                banner = 1)
         )
 
         assertThrows<AuthorizationException> {
             controller.updateGame(
                 tokenData = TokenData(
                     userId = user.id,
+                    userName = user.userName,
                     tokenType = TokenType.AccessToken
                 ),
                 gameId = game?.id ?: -1,
                 updateGameRequest = UpdateGameRequest(
                     name = "updatedName",
+                    itemCategories = listOf(),
                     icon = 1,
                     banner = 1
                 )
@@ -133,13 +149,18 @@ class GameControllerTest {
         userRepo.setUserRole(user.id, User.Role.Admin)
 
         val game = gameRepo.addNew(
-            NewGameRequest("testGame", 1, 1)
+            NewGameRequest(
+                name ="testGame",
+                itemCategories = listOf(),
+                icon = 1,
+                banner = 1)
         )
 
         assertEquals(1, gameRepo.getGames().size)
         controller.deleteGame(
             tokenData = TokenData(
                 userId = user.id,
+                userName = user.userName,
                 tokenType = TokenType.AccessToken
             ),
             gameId = game?.id ?: -1
@@ -154,13 +175,18 @@ class GameControllerTest {
         userRepo.setUserRole(user.id, User.Role.User)
 
         val game = gameRepo.addNew(
-            NewGameRequest("testGame", 1, 1)
+            NewGameRequest(
+                name = "testGame",
+                itemCategories = listOf(),
+                icon = 1,
+                banner = 1)
         )
 
         assertThrows<AuthorizationException> {
             controller.deleteGame(
                 tokenData = TokenData(
                     userId = user.id,
+                    userName = user.userName,
                     tokenType = TokenType.AccessToken
                 ),
                 gameId = game?.id ?: -1
@@ -176,11 +202,16 @@ class GameControllerTest {
         userRepo.setUserRole(user.id, User.Role.User)
 
         val game = gameRepo.addNew(
-            NewGameRequest("testGame", 1, 1)
+            NewGameRequest(
+                name = "testGame",
+                itemCategories = listOf(),
+                icon = 1,
+                banner = 1)
         )
         val response = controller.getGame(
             tokenData = TokenData(
                 userId = user.id,
+                userName = user.userName,
                 tokenType = TokenType.AccessToken
             ),
             gameId = game?.id ?: -1
@@ -197,15 +228,24 @@ class GameControllerTest {
         userRepo.setUserRole(user.id, User.Role.User)
 
         gameRepo.addNew(
-            NewGameRequest("testGame1", 1, 1)
+            NewGameRequest(
+                name = "testGame1",
+                itemCategories = listOf(),
+                icon = 1,
+                banner = 1)
         )
         gameRepo.addNew(
-            NewGameRequest("testGame2", 1, 1)
+            NewGameRequest(
+                name = "testGame2",
+                itemCategories = listOf(),
+                icon = 1,
+                banner = 1)
         )
 
         val response = controller.getAllGames(
             tokenData = TokenData(
                 userId = user.id,
+                userName = user.userName,
                 tokenType = TokenType.AccessToken
             )
         )

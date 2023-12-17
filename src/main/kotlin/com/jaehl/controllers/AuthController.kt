@@ -13,6 +13,7 @@ import com.jaehl.models.requests.UserChangeRoleRequest
 import com.jaehl.models.requests.UserRegisterRequest
 import com.jaehl.models.response.UserSanitized
 import com.jaehl.statuspages.AuthorizationException
+import com.jaehl.statuspages.BadRequest
 import com.jaehl.statuspages.NotFound
 
 class AuthController(
@@ -21,6 +22,21 @@ class AuthController(
 ) : Controller {
 
     suspend fun userRegister(userRegisterRequest : UserRegisterRequest) : UserTokens {
+        val notUniqueUserName = userRepo.getUserByUserName(userName = userRegisterRequest.userName) != null
+        val notUniqueEmail = userRepo.getUserByEmail(email = userRegisterRequest.email) != null
+        if(notUniqueUserName || notUniqueEmail){
+            val responseMessage = if(notUniqueUserName && notUniqueEmail){
+                "Your User Name and Email are already in use"
+            }
+            else if(notUniqueEmail) {
+                "Your email is already in use"
+            }
+            else {
+                "Your User Name is already in use"
+            }
+            throw BadRequest(responseMessage)
+        }
+
         val user = userRepo.createUser(userRegisterRequest)
         return UserTokens(
             refreshToken = tokenManager.generateJWTToken(user, TokenType.RefreshToken),
