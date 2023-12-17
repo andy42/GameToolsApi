@@ -25,6 +25,8 @@ interface UserRepo {
     suspend fun addUserFromBackup(user : User) : User
     suspend fun verifyAndGetUser(userCredentials: UserCredentials) : User?
     suspend fun getUser(userId : Int) : User?
+    suspend fun getUserByUserName(userName : String) : User?
+    suspend fun getUserByEmail(email : String) : User?
     suspend fun getUsers() : List<User>
     suspend fun changeUserRole(userId : Int, request : UserChangeRoleRequest) : User
     suspend fun changeUserPassword(userId : Int, request : UserChangePasswordRequest)
@@ -58,23 +60,6 @@ class UserRepoImp(
     }
 
     override suspend fun createUser(request : UserRegisterRequest): User = database.dbQuery {
-
-        val uniqueUserName = (UserEntity.find { UserTable.userName eq request.userName }.firstOrNull() == null)
-        val uniqueEmail = (UserEntity.find { UserTable.userName eq request.email }.firstOrNull() == null)
-
-        if(uniqueUserName || uniqueEmail){
-            val responseMessage = if(uniqueUserName && uniqueEmail){
-                "Your User Name and Email are already in user"
-            }
-            else if(uniqueUserName) {
-                "Your User Name is already in user"
-            }
-            else {
-                "Your Email is already in user"
-            }
-            throw BadRequest(responseMessage)
-        }
-
         return@dbQuery UserEntity.new {
             userName = request.userName
             email = request.email
@@ -100,6 +85,14 @@ class UserRepoImp(
 
     override suspend fun getUser(userId: Int): User? = database.dbQuery {
         return@dbQuery UserEntity.findById(userId)?.toUser()
+    }
+
+    override suspend fun getUserByUserName(userName: String): User? = database.dbQuery {
+        return@dbQuery UserEntity.find { UserTable.userName eq userName }.firstOrNull()?.toUser()
+    }
+
+    override suspend fun getUserByEmail(email: String): User? = database.dbQuery {
+        return@dbQuery UserEntity.find { UserTable.email eq email }.firstOrNull()?.toUser()
     }
 
     override suspend fun getUsers(): List<User> = database.dbQuery {

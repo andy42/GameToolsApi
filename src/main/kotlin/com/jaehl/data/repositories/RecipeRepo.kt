@@ -97,6 +97,7 @@ class RecipeRepoImp(
         RecipeCraftedAtTable.deleteWhere { recipe eq recipeId }
         RecipeInputTable.deleteWhere { recipe eq recipeId }
         RecipeOutputTable.deleteWhere { recipe eq recipeId }
+        GroupItemPreferencesTable.deleteWhere { (recipe eq recipeId) }
         recipeEntity.delete()
     }
 

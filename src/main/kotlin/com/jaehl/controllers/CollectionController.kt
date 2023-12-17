@@ -36,7 +36,6 @@ class CollectionController(
 
     suspend fun getCollections(tokenData : TokenData, gameId : Int?) : List<Collection> = accessTokenCall(userRepo, tokenData) { user ->
         if(gameId == null){
-            if(user.role != User.Role.Admin ) throw AuthorizationException()
             return@accessTokenCall collectionRepo.getCollections(tokenData.userId)
         }
         else {

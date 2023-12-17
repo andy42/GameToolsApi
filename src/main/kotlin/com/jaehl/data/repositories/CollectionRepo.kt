@@ -17,6 +17,7 @@ interface CollectionRepo {
     suspend fun addCollection(userId : Int, request : NewCollectionRequest) : Collection
     suspend fun updateCollection(userId: Int, collectionId : Int, request : UpdateCollectionRequest) : Collection
     suspend fun deleteCollection(collectionId : Int)
+    suspend fun getAdminAllCollections(userId: Int) : List<Collection>
     suspend fun getCollections(userId: Int) : List<Collection>
     suspend fun getCollections(userId : Int, gameId : Int) : List<Collection>
     suspend fun getCollection(userId: Int, collectionId: Int) : Collection
@@ -120,8 +121,12 @@ class CollectionRepoImp(
         collectionEntity.delete()
     }
 
-    override suspend fun getCollections(userId: Int) : List<Collection> = database.dbQuery {
+    override suspend fun getAdminAllCollections(userId: Int): List<Collection> = database.dbQuery {
         return@dbQuery CollectionEntity.all().map { it.toCollection(userId) }
+    }
+
+    override suspend fun getCollections(userId: Int) : List<Collection> = database.dbQuery {
+        return@dbQuery CollectionEntity.find { (CollectionTable.user eq userId) }.map { it.toCollection(userId) }
     }
 
     override suspend fun getCollections(userId: Int, gameId: Int) : List<Collection> = database.dbQuery {

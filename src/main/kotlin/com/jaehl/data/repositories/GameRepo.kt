@@ -13,6 +13,7 @@ import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 interface GameRepo {
     suspend fun addNew(request : NewGameRequest) : Game
@@ -71,6 +72,7 @@ class GameRepoImp(
 
     override suspend fun deleteGame(id: Int) = database.dbQuery {
         val gameEntity = GameEntity.findById(id) ?: throw  Exception("game not found : $id")
+        GameCategoriesTable.deleteWhere { game eq  id}
         gameEntity.delete()
     }
 }
